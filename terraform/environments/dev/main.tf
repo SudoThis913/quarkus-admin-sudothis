@@ -45,7 +45,7 @@ module "quarkus_app" {
   name           = "quarkus-admin"
   image          = "quarkus-admin:dev"
   internal_port = 8080
-  external_port = 8081
+  external_port = 8082
   network_name = docker_network.app_net.name
   
   env_vars = {

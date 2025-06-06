@@ -13,5 +13,11 @@ variable "port" {
 
 variable "password" {
   type    = string
-  default = ""
+  default = "letmein"
+}
+
+variable "env_vars" {
+  type        = map(string)
+  default     = {}
+  description = "Optional environment variables for the Redis container"
 }
