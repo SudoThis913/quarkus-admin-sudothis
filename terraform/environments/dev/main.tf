@@ -15,32 +15,13 @@ resource "docker_network" "app_net" {
   }
 }
 
-resource "docker_container" "mailhog" {
-  name         = "mailhog"
-  image        = "mailhog/mailhog"
-  restart      = "unless-stopped"
-  networks_advanced {
-    name = docker_network.app_net.name
-  }
-
-  ports {
-    internal = 1025
-    external = 1025
-  }
-
-  ports {
-    internal = 8025
-    external = 8025
-  }
-}
-
 module "redis" {
   source       = "../../modules/redis"
   providers    = { docker = docker }
   name         = "quarkus-redis"
   port         = 6379
   network_name = docker_network.app_net.name
-  password     = "letmein" # optional; remove or change, definitely change before using in prod
+  password     = "letmein" # optional; remove or change
   
   env_vars = {
     REDIS_PASSWORD = "letmein"
@@ -64,7 +45,7 @@ module "quarkus_app" {
   name           = "quarkus-admin"
   image          = "quarkus-admin:dev"
   internal_port = 8080
-  external_port = 8081
+  external_port = 8082
   network_name = docker_network.app_net.name
   
   env_vars = {
@@ -73,18 +54,7 @@ module "quarkus_app" {
     QUARKUS_DATASOURCE_USERNAME = "admin"
     QUARKUS_DATASOURCE_PASSWORD = "admin123"
     QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION = "update"
-    SMTP_HOST                             = "mailhog"
-    SMTP_PORT                             = "1025"
   }
   depends_on = [module.mysql]
 }
 
-
-module "mailhog" {
-  source       = "../../modules/mailhog"
-  providers = {docker = docker }
-  name         = "mailhog"
-  network_name = docker_network.app_net.name
-  smtp_port    = 1025
-  ui_port      = 8025
-}
