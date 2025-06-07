@@ -1,17 +1,20 @@
-// src/main/java/com/sudothis/model/User.java
+// File: src/main/java/com/sudothis/model/User.java
 
 package com.sudothis.model;
 
 import jakarta.persistence.*;
-import java.io.Serializable;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "USER")
-public class User implements Serializable {
+@Table(name = "APP_USER")
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
+    @Column(name = "USER_ENABLED")
+    private Boolean enabled;
 
     @Column(name = "USERNAME", nullable = false, unique = true)
     private String username;
@@ -19,22 +22,38 @@ public class User implements Serializable {
     @Column(name = "EMAIL", nullable = false, unique = true)
     private String email;
 
+    @Column(name = "ORG_ID", nullable = false)
+    private int orgID;
+
+    @Column(name = "TEAM_ID", nullable = false)
+    private int teamID;
+
     @Column(name = "API_KEY")
     private String apiKey;
 
-    @Column(name = "PASSWORD_HASH", nullable = false)
+    @Column(name = "PASSWORD_HASH")
     private String passwordHash;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ORG_ID", nullable = false)
-    private int orgID;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "TEAM_ID", nullable = false)
-    private int teamID;
+    @Column(name = "LAST_LOGGED_IN")
+    private LocalDateTime lastLoggedIn;
 
     @Column(name = "USER_TYPE", nullable = false)
-    private String userType; //Remeber to enum this at some point, remove magic strings from get methods
+    @Enumerated(EnumType.STRING)
+    private UserType userType;
+
+    @Column(name = "SESSION_ID", unique = true)
+    private String sessionToken;
+
+    @Column(name = "SESSION_IPV4")
+    private String sessionIp;
+
+    @Column(name = "CREATED", updatable = false)
+    private LocalDateTime created;
+
+    @Column(name = "UPDATED")
+    private LocalDateTime updated;
+
+    // Getters and setters
 
     public int getId() {
         return id;
@@ -42,6 +61,14 @@ public class User implements Serializable {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public Boolean getEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(Boolean enabled) {
+        this.enabled = enabled;
     }
 
     public String getUsername() {
@@ -60,6 +87,22 @@ public class User implements Serializable {
         this.email = email;
     }
 
+    public int getOrgID() {
+        return orgID;
+    }
+
+    public void setOrgID(int orgID) {
+        this.orgID = orgID;
+    }
+
+    public int getTeamID() {
+        return teamID;
+    }
+
+    public void setTeamID(int teamID) {
+        this.teamID = teamID;
+    }
+
     public String getApiKey() {
         return apiKey;
     }
@@ -76,27 +119,57 @@ public class User implements Serializable {
         this.passwordHash = passwordHash;
     }
 
-    public int getOrgID() {
-        return orgID;
-    }
-     
-    public void setOrgID(int in_orgID) {
-        this.orgID = in_orgID;
+    public LocalDateTime getLastLoggedIn() {
+        return lastLoggedIn;
     }
 
-    public int getTeamID() {
-        return teamID;
+    public void setLastLoggedIn(LocalDateTime lastLoggedIn) {
+        this.lastLoggedIn = lastLoggedIn;
     }
 
-    public void setTeamID(int in_team) {
-        this.teamID = in_team;
+    public UserType getUserType() {
+        return userType;
     }
 
-    public boolean getSiteAdmin() {
-        return userType == "SITE_ADMIN";
+    public void setUserType(UserType userType) {
+        this.userType = userType;
     }
 
-    public boolean getOrgAdmin() {
-        return userType == "ORG_ADMIN";
+    public String getSessionToken() {
+        return sessionToken;
     }
-}
+
+    public void setSessionToken(String sessionToken) {
+        this.sessionToken = sessionToken;
+    }
+
+    public String getSessionIp() {
+        return sessionIp;
+    }
+
+    public void setSessionIp(String sessionIp) {
+        this.sessionIp = sessionIp;
+    }
+
+    public LocalDateTime getCreated() {
+        return created;
+    }
+
+    public void setCreated(LocalDateTime created) {
+        this.created = created;
+    }
+
+    public LocalDateTime getUpdated() {
+        return updated;
+    }
+
+    public void setUpdated(LocalDateTime updated) {
+        this.updated = updated;
+    }
+
+    public enum UserType {
+        SITE_ADMIN,
+        SITE_SUPPORT,
+        USER
+    }
+} 

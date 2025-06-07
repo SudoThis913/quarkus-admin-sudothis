@@ -1,0 +1,14 @@
+# 1. Initialize
+terraform init
+
+# 2. Generate the plan and write it to a file
+terraform plan -out=tf_plan.txt
+
+# 3. Review human-readable version
+terraform show tf_plan.txt > tf_plan_readable.txt
+
+# 4. Apply terraform changes from the out file
+terraform apply tf_plan.txt
+
+# 5. Skip 1-4 and Yolo it
+terraform apply -auto-approve

@@ -4,6 +4,7 @@ package com.sudothis.auth;
 
 import com.sudothis.model.User;
 import com.sudothis.service.UserService;
+import com.sudothis.auth.SessionManager;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import jakarta.inject.Inject;
@@ -27,6 +28,9 @@ public class UserAuthController {
     UserService userService;
 
     @Inject
+    SessionManager sessionManager;
+
+    @Inject
     RedisDataSource redisDS;
 
     @ConfigProperty(name = "session.timeout", defaultValue = "604800")
@@ -47,7 +51,7 @@ public class UserAuthController {
 
     @POST
     @Path("/login")
-    public Response login(Credentials creds, @Context UriInfo uriInfo) {
+    public Response login(Credentials creds, @Context UriInfo uriInfo, @Context HttpHeaders headers) {
         String attemptsKey = "login_attempts:" + creds.username;
         String blockKey = "login_blocked:" + creds.username;
 
@@ -79,13 +83,19 @@ public class UserAuthController {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
 
-        redis.setex(attemptsKey, 1, "0"); // clears attempt counter quickly
+        redis.setex(attemptsKey, 1, "0");
 
-        String sessionId = UUID.randomUUID().toString();
-        String sessionKey = "session:" + sessionId;
-        String sessionData = String.format("{\"user\":\"%s\",\"created\":\"%s\"}", user.getUsername(), Instant.now().toString());
+        String clientIp = headers.getHeaderString("X-Forwarded-For");
+        if (clientIp == null) {
+            clientIp = headers.getRequestHeader("Host").stream().findFirst().orElse("unknown");
+        }
 
-        redis.setex(sessionKey, sessionTimeout, sessionData);
+        user.setSessionIp(clientIp);
+        String sessionId = sessionManager.createSession(user);
+
+        // Generate CSRF token and store in Redis
+        String csrfToken = UUID.randomUUID().toString();
+        redis.setex("csrf:" + sessionId, sessionTimeout, csrfToken);
 
         NewCookie sessionCookie = new NewCookie.Builder("sudothis_session")
             .value(sessionId)
@@ -97,7 +107,17 @@ public class UserAuthController {
             .httpOnly(true)
             .build();
 
-        return Response.ok().cookie(sessionCookie).build();
+        NewCookie csrfCookie = new NewCookie.Builder("csrf_token")
+            .value(csrfToken)
+            .path("/")
+            .domain(null)
+            .comment("CSRF token")
+            .maxAge(sessionTimeout)
+            .secure(true)
+            .httpOnly(false) // Accessible via JS for XHR use
+            .build();
+
+        return Response.ok().cookie(sessionCookie).cookie(csrfCookie).build();
     }
 
     private int incrementAttempts(String key) {
@@ -114,21 +134,10 @@ public class UserAuthController {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
 
-        String sessionKey = "session:" + sessionId;
-        String sessionData = redis.get(sessionKey);
-
-        if (sessionData == null || !sessionData.contains("\"user\":")) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
-        }
-
-        String username = sessionData.replaceAll(".*\\\"user\\\":\\\"(.*?)\\\".*", "$1");
-
-        Optional<User> userOpt = userService.findByUsername(username);
+        Optional<User> userOpt = sessionManager.getUserFromSession(sessionId);
         if (userOpt.isEmpty()) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
-
-        redis.setex(sessionKey, sessionTimeout, sessionData); // refresh TTL safely
 
         return Response.ok(userOpt.get()).build();
     }
@@ -137,8 +146,8 @@ public class UserAuthController {
     @Path("/logout")
     public Response logout(@CookieParam("sudothis_session") String sessionId) {
         if (sessionId != null) {
-            String sessionKey = "session:" + sessionId;
-            redis.setex(sessionKey, 1, ""); // expires quickly
+            sessionManager.invalidateSession(sessionId);
+            redis.setex("csrf:" + sessionId, 1, ""); // purge CSRF
         }
         return Response.noContent().build();
     }
@@ -150,27 +159,17 @@ public class UserAuthController {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
 
-        String oldSessionKey = "session:" + oldSessionId;
-        String sessionData = redis.get(oldSessionKey);
-
-        if (sessionData == null || !sessionData.contains("\"user\":")) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
-        }
-
-        String username = sessionData.replaceAll(".*\\\"user\\\":\\\"(.*?)\\\".*", "$1");
-
-        Optional<User> userOpt = userService.findByUsername(username);
+        Optional<User> userOpt = sessionManager.getUserFromSession(oldSessionId);
         if (userOpt.isEmpty()) {
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
 
-        redis.setex(oldSessionKey, 1, "");
+        sessionManager.invalidateSession(oldSessionId);
+        redis.setex("csrf:" + oldSessionId, 1, "");
 
-        String newSessionId = UUID.randomUUID().toString();
-        String newSessionKey = "session:" + newSessionId;
-        String newSessionData = String.format("{\"user\":\"%s\",\"created\":\"%s\"}", username, Instant.now().toString());
-
-        redis.setex(newSessionKey, sessionTimeout, newSessionData);
+        String newSessionId = sessionManager.createSession(userOpt.get());
+        String csrfToken = UUID.randomUUID().toString();
+        redis.setex("csrf:" + newSessionId, sessionTimeout, csrfToken);
 
         NewCookie sessionCookie = new NewCookie.Builder("sudothis_session")
             .value(newSessionId)
@@ -182,7 +181,17 @@ public class UserAuthController {
             .httpOnly(true)
             .build();
 
-        return Response.ok().cookie(sessionCookie).build();
+        NewCookie csrfCookie = new NewCookie.Builder("csrf_token")
+            .value(csrfToken)
+            .path("/")
+            .domain(null)
+            .comment("CSRF token")
+            .maxAge(sessionTimeout)
+            .secure(true)
+            .httpOnly(false)
+            .build();
+
+        return Response.ok().cookie(sessionCookie).cookie(csrfCookie).build();
     }
 
     public static class Credentials {

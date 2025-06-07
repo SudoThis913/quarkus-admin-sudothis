@@ -27,7 +27,10 @@ public class CustomIdentityProvider implements SecurityIdentityAugmentor {
     @Override
     public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
         return null;
-        /*return Uni.createFrom().deferred(() -> {
+        /*
+            F*** THIS CLASS. Will move on to it later.
+        
+        return Uni.createFrom().deferred(() -> {
             String username = identity.getPrincipal().getName();
             Optional<User> optionalUser = userService.findByUsername(username);
 

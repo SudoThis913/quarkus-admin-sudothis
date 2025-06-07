@@ -1,4 +1,4 @@
-// path: src/main/java/com/sudothis/service/UserService.java
+// File: src/main/java/com/sudothis/service/UserService.java
 
 package com.sudothis.service;
 
@@ -66,15 +66,40 @@ public class UserService {
         return true;
     }
 
-    private String hashPassword(char[] rawPassword) {
+    public String hashPassword(char[] rawPassword) {
         return BCrypt.withDefaults().hashToString(BCRYPT_WORK_FACTOR, rawPassword);
     }
 
-    private boolean checkPassword(char[] rawPassword, String hashed) {
+    public boolean verifyPassword(char[] rawPassword, String hashed) {
         return BCrypt.verifyer().verify(rawPassword, hashed).verified;
     }
 
     public Optional<User> findByUsername(String username) {
         return userRepository.find("username", username).firstResultOptional();
     }
-} 
+
+    public Optional<User> findByEmail(String email) {
+        return userRepository.find("email", email).firstResultOptional();
+    }
+
+    public Optional<User> findById(int id) {
+        return Optional.ofNullable(userRepository.findById((long) id));
+    }
+
+    public Optional<User> findBySessionToken(String token) {
+        return userRepository.find("sessionToken", token).firstResultOptional();
+    }
+
+    @Transactional
+    public void updateSessionInfo(User user) {
+        userRepository.persist(user);
+    }
+
+    @Transactional
+    public void clearSessionToken(String token) {
+        findBySessionToken(token).ifPresent(user -> {
+            user.setSessionToken(null);
+            user.setSessionIp(null);
+        });
+    }
+}
