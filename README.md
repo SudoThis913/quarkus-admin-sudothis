@@ -1,5 +1,14 @@
 # quarkus-admin-sudothis
 
+This is the beginning of a FOSS project to create a django-like admin page in Quarkus.
+The goal of this project is to provide the basic scaffolding for secure server-side session hosting and an admin panel for user account administration.
+Technologies used: Quarkus, Redis, MySql8, MailHog, Java 17.
+To set up local environment:
+cd quarkus-admin-sudothis/terraform/environments/local/
+terraform_deploy.sh
+terraform apply "tf_out.txt"
+
+
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
 If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
