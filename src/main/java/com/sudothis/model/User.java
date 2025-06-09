@@ -3,6 +3,7 @@
 package com.sudothis.model;
 
 import jakarta.persistence.*;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
@@ -21,6 +22,10 @@ public class User {
 
     @Column(name = "EMAIL", nullable = false, unique = true)
     private String email;
+
+    @ManyToOne
+    @JoinColumn(name = "ORG_ID", insertable = false, updatable = false)
+    private Org org;
 
     @Column(name = "ORG_ID", nullable = false)
     private int orgID;
@@ -44,8 +49,17 @@ public class User {
     @Column(name = "SESSION_ID", unique = true)
     private String sessionToken;
 
+    @Column(name = "SESSION_EXPIRES")
+    private Instant sessionExpires;
+
     @Column(name = "SESSION_IPV4")
     private String sessionIp;
+
+    @Column(name = "CSRF_TOKEN")
+    private String csrfToken;
+
+    @Column(name = "USER_AGENT_HASH")
+    private String userAgentHash;
 
     @Column(name = "CREATED", updatable = false)
     private LocalDateTime created;
@@ -53,7 +67,10 @@ public class User {
     @Column(name = "UPDATED")
     private LocalDateTime updated;
 
-    // Getters and setters
+    @Column(name = "DELETE_DATE")
+private LocalDateTime deleteDate;
+
+    // Getters and Setters
 
     public int getId() {
         return id;
@@ -143,12 +160,36 @@ public class User {
         this.sessionToken = sessionToken;
     }
 
+    public Instant getSessionExpires() {
+        return sessionExpires;
+    }
+
+    public void setSessionExpires(Instant sessionExpires) {
+        this.sessionExpires = sessionExpires;
+    }
+
     public String getSessionIp() {
         return sessionIp;
     }
 
     public void setSessionIp(String sessionIp) {
         this.sessionIp = sessionIp;
+    }
+
+    public String getCsrfToken() {
+        return csrfToken;
+    }
+
+    public void setCsrfToken(String csrfToken) {
+        this.csrfToken = csrfToken;
+    }
+
+    public String getUserAgentHash() {
+        return userAgentHash;
+    }
+
+    public void setUserAgentHash(String userAgentHash) {
+        this.userAgentHash = userAgentHash;
     }
 
     public LocalDateTime getCreated() {
@@ -172,4 +213,8 @@ public class User {
         SITE_SUPPORT,
         USER
     }
-} 
+
+    public LocalDateTime getDeleteDate() {
+    return deleteDate;
+}
+}

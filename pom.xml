@@ -48,10 +48,10 @@
             <artifactId>quarkus-rest</artifactId>
         </dependency>
         <!-- JSON support for endpoints -->
-        <dependency>
+        <!-- <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-jackson</artifactId>
-        </dependency>
+        </dependency> -->
         <!-- Quarkus Dev UI & Testing -->
         <dependency>
             <groupId>io.quarkus</groupId>
