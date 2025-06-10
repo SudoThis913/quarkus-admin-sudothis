@@ -18,10 +18,32 @@ if docker container inspect quarkus-mysql &>/dev/null; then
   docker rm -f quarkus-mysql
 fi
 
+# Always remove Redis container if it exists
+if docker container inspect quarkus-redis &>/dev/null; then
+  echo "Removing existing container: quarkus-redis"
+  docker rm -f quarkus-redis
+fi
+
+echo "Cleaning up MySQL container and volume..."
+docker rm -f quarkus-mysql 2>/dev/null || true
+docker volume rm quarkus-mysql-data 2>/dev/null || true
+
+if $FULL_RESET && docker volume inspect quarkus-mysql-data &>/dev/null; then
+  echo "Removing MySQL data volume: quarkus-mysql-data"
+  docker volume rm quarkus-mysql-data
+  echo "Removing volume from Terraform state..."
+  terraform state rm 'module.mysql.docker_volume.mysql_data' || true
+fi
+
 # Always remove Quarkus container if it exists
 if docker container inspect quarkus-admin &>/dev/null; then
   echo "Removing existing container: quarkus-admin"
   docker rm -f quarkus-admin
+fi
+
+if docker container inspect mailhog &>/dev/null; then
+  echo "Removing existing container: mailhog"
+  docker rm -f mailhog
 fi
 
 # Conditionally remove network
@@ -35,6 +57,9 @@ if $FULL_RESET && docker image inspect mysql:8 &>/dev/null; then
   echo "Removing existing image: mysql:8"
   docker rmi -f mysql:8
 fi
+
+docker rm -f flyway-init 2>/dev/null || true
+
 
 echo "Running Terraform deployment steps..."
 terraform init

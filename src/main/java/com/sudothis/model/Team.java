@@ -1,18 +1,24 @@
-// src/main/java/com/sudothis/model/Team.java
-
+// path: src/main/java/com/sudothis/model/Team.java
 package com.sudothis.model;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntity;
-
 import jakarta.persistence.*;
+import java.util.List;
 
 @Entity
-public class Team extends PanacheEntity {
+@Table(name = "TEAM")
+public class Team {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    public Integer id;
 
     @Column(nullable = false)
     public String name;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "org_id", referencedColumnName = "id")
+    @ManyToOne
+    @JoinColumn(name = "ORG_ID", nullable = false)
     public Org org;
+
+    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL)
+    public List<AppUser> users;
 }
