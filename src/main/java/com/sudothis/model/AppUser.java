@@ -1,83 +1,47 @@
-// path: src/main/java/com/sudothis/model/AppUser.java
 package com.sudothis.model;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
-import io.quarkus.security.jpa.Password;
-import io.quarkus.security.jpa.Roles;
-//import io.quarkus.security.jpa.*;
 import jakarta.persistence.*;
-import java.time.Instant;
+import java.util.*;
 
 @Entity
 @Table(name = "APP_USER")
-public class AppUser extends PanacheEntityBase {
+public class AppUser {
+
+    // Legacy enum to keep existing controllers compiling
+    public enum UserType { USER, TEAM_ADMIN, ORG_ADMIN, SITE_ADMIN }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ID")
     public Long id;
 
-    @Column(name = "USER_ENABLED", nullable = false)
-    public boolean enabled = true;
-
-    @Column(nullable = false, unique = true)
+    @Column(name = "USERNAME", nullable = false, unique = true, length = 64)
     public String username;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "EMAIL",   nullable = false, unique = true, length = 128)
     public String email;
 
-    @ManyToOne
-    @JoinColumn(name = "ORG_ID", nullable = false)
-    public Org org;
-
-    @ManyToOne
-    @JoinColumn(name = "TEAM_ID", nullable = false)
-    public Team team;
-
-    @Column(name = "API_KEY")
-    public String apiKey;
-
-    @Password
-    @Column(name = "PASSWORD_HASH", nullable = false)
+    @Column(name = "PASSWORD_HASH", nullable = false, length = 256)
     public String passwordHash;
 
-    @Column(name = "LAST_LOGGED_IN")
-    public Instant lastLoggedIn;
+    // Compatibility shim — can be dropped after UI rewrite
+    @Column(name = "USER_ENABLED")
+    public boolean enabled = false;
 
-    @Roles
-    @Column(name = "USER_TYPE", nullable = false)
     @Enumerated(EnumType.STRING)
-    public UserType userType;
+    @Column(name = "USER_TYPE", length = 32)
+    public UserType userType = UserType.USER;
 
-    @Column(name = "SESSION_ID", unique = true)
-    public String sessionId;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "USER_ROLE", joinColumns = @JoinColumn(name = "USER_ID"))
+    @Column(name = "ROLE", length = 32)
+    public Set<String> roles = new HashSet<>();
 
-    @Column(name = "SESSION_EXPIRES")
-    public Instant sessionExpires;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    public List<PersistentSession> sessions = new ArrayList<>();
 
-    @Column(name = "SESSION_IPV4")
-    public String sessionIpv4;
-
-    @Column(name = "CSRF_TOKEN")
-    public String csrfToken;
-
-    @Column(name = "USER_AGENT_HASH")
-    public String userAgentHash;
-
-    @Column(name = "DELETE_DATE")
-    public Instant deleteDate;
-
-    @Column(name = "CREATED", nullable = false, updatable = false)
-    public Instant created = Instant.now();
-
-    @Column(name = "UPDATED", nullable = false)
-    public Instant updated = Instant.now();
-
-    @PreUpdate
-    public void onUpdate() {
-        this.updated = Instant.now();
-    }
-
-    public enum UserType {
-        SITE_ADMIN, SITE_SUPPORT, USER
+    public void addSession(PersistentSession ps) {
+        sessions.add(ps);
+        ps.user = this;
     }
 }

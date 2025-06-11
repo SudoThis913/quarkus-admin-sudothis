@@ -1,65 +1,73 @@
-// path: src/main/java/com/sudothis/service/UserService.java
 package com.sudothis.service;
 
 import com.sudothis.model.AppUser;
-import com.sudothis.model.AppUser.UserType;
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.transaction.Transactional;
 import de.mkammerer.argon2.Argon2;
 import de.mkammerer.argon2.Argon2Factory;
-
-import java.util.Arrays;
-import java.util.Optional;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
+import java.util.*;
 
 @ApplicationScoped
-public class UserService implements PanacheRepository<AppUser> {
+public class UserService {
 
-    private static final Argon2 argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id);
+    private static final Argon2 A2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id);
+    private static final int ITER = 4;          // time cost
+    private static final int MEM  = 1 << 16;    // 65 536 KiB
+    private static final int PAR  = 2;          // parallelism
 
+    @Inject EntityManager em;
+
+    /* ---------- AUTH ---------- */
     @Transactional
-    public AppUser registerUser(char[] rawPassword, String username, String email, UserType userType) {
-        try {
-            String hashed = hashPassword(rawPassword);
-            AppUser user = new AppUser();
-            user.username = username;
-            user.email = email;
-            user.passwordHash = hashed;
-            user.userType = userType;
-            user.enabled = false; // will be verified later
-            user.persist();
-            return user;
-        } finally {
-            Arrays.fill(rawPassword, '\0');
-        }
+    public AppUser authenticate(String username, char[] pw) {
+        AppUser u = findByUsername(username).orElseThrow(() -> new SecurityException("Bad credentials"));
+        if (!verify(pw, u.passwordHash)) throw new SecurityException("Bad credentials");
+        return u;
     }
 
-    public String hashPassword(char[] rawPassword) {
-        try {
-            return argon2.hash(3, 1 << 13, 1, rawPassword); // 3 iterations, 8MB, 1 thread
-        } finally {
-            Arrays.fill(rawPassword, '\0');
-        }
+    /* --------- REGISTER -------- */
+    @Transactional
+    public AppUser registerUser(char[] pw, String username, String email, AppUser.UserType type) {
+        AppUser u = new AppUser();
+        u.username = username;
+        u.email    = email;
+        u.passwordHash = hash(pw);
+        u.userType = type;
+        em.persist(u);
+        return u;
     }
 
-    public boolean verifyPassword(char[] rawPassword, String hashed) {
-        try {
-            return argon2.verify(hashed, rawPassword);
-        } finally {
-            Arrays.fill(rawPassword, '\0');
-        }
+    /* ---------- HELPERS -------- */
+    public Optional<AppUser> findByUsername(String u) {
+        return em.createQuery("FROM AppUser WHERE username = :u", AppUser.class)
+                 .setParameter("u", u)
+                 .getResultStream()
+                 .findFirst();
     }
-
-    public Optional<AppUser> findByUsername(String username) {
-        return find("username", username).firstResultOptional();
+    public Optional<AppUser> findByEmail(String e) {
+        return em.createQuery("FROM AppUser WHERE email = :e", AppUser.class)
+                 .setParameter("e", e)
+                 .getResultStream()
+                 .findFirst();
     }
-
-    public Optional<AppUser> findByEmail(String email) {
-        return find("email", email).firstResultOptional();
-    }
-
     public Optional<AppUser> findByIdOptional(Long id) {
-    return find("id", id).firstResultOptional();
-}
+        return Optional.ofNullable(em.find(AppUser.class, id));
+    }
+    @Transactional public void persist(AppUser u) { em.persist(u); }
 
+    /* ------- HASH / VERIFY ----- */
+    public String hash(char[] pw) {
+        try {
+            String raw = A2.hash(ITER, MEM, PAR, pw);
+            return String.format("argon2id$%d$%d$%d$%s", ITER, MEM, PAR, raw);
+        } finally { Arrays.fill(pw, '\0'); }
+    }
+    private boolean verify(char[] pw, String stored) {
+        try {
+            String[] p = stored.split("\\$", 5);
+            return A2.verify(p[4], pw);
+        } finally { Arrays.fill(pw, '\0'); }
+    }
 }
