@@ -1,18 +1,18 @@
 package com.sudothis.elytron.security.jpa;
 
-import jakarta.annotation.security.RolesAllowed;
+import jakarta.annotation.security.PermitAll;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-@Path("/api/admin")
-public class AdminResource {
+@Path("/api/public")
+public class PublicResource {
 
     @GET
-    @RolesAllowed("admin")
+    @PermitAll
     @Produces(MediaType.TEXT_PLAIN)
-    public String adminResource() {
-        return "admin";
+    public String publicResource() {
+        return "public";
     }
 }
