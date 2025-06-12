@@ -143,6 +143,9 @@ Run tests with:
 ```bash
 ./mvnw test
 ```
+## Planned Enhancements
+
+NGINX reverse proxy integration for production environment
 
 ## Known Limitations
 
