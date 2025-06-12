@@ -1,0 +1,1 @@
+./terraform/environments/prod/prod_deploy.sh

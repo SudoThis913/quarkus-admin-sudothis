@@ -1,9 +1,202 @@
 
+[1m[36mNote:[0m[1m Objects have changed outside of Terraform
+[0m
+Terraform detected the following changes made outside of Terraform since the
+last "terraform apply" which may have affected this plan:
+
+[1m  # docker_network.app_net[0m has been deleted
+[0m  [31m-[0m[0m resource "docker_network" "app_net" {
+        id          = "3677c61ce440c5c04145df10d87a41b2f431407191a8efd3e38ab88f8bc77dda"
+      [31m-[0m[0m name        = "quarkus_net" [90m-> null[0m[0m
+        [90m# (8 unchanged attributes hidden)[0m[0m
+
+        [90m# (1 unchanged block hidden)[0m[0m
+    }
+
+[1m  # module.mysql.docker_image.mysql[0m has been deleted
+[0m  [31m-[0m[0m resource "docker_image" "mysql" {
+        id          = "sha256:8f360cd2e6e4a37e8b8638fec65c779e4c1c1f4f785765bf2aab3fbc59f95a26mysql:8"
+      [31m-[0m[0m name        = "mysql:8" [90m-> null[0m[0m
+        [90m# (2 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # module.quarkus_app.docker_container.quarkus[0m has been deleted
+[0m  [31m-[0m[0m resource "docker_container" "quarkus" {
+      [31m-[0m[0m id                                          = "bd4d2af912184ec0d238dd863974136076cb67effa7f23c577473ed71fea9f58" [90m-> null[0m[0m
+        name                                        = "quarkus-admin"
+        [90m# (41 unchanged attributes hidden)[0m[0m
+
+        [90m# (2 unchanged blocks hidden)[0m[0m
+    }
+
+
+Unless you have made equivalent changes to your configuration, or ignored the
+relevant attributes using ignore_changes, the following plan may include
+actions to undo or respond to these changes.
+[90m
+─────────────────────────────────────────────────────────────────────────────[0m
+
 Terraform used the selected providers to generate the following execution
 plan. Resource actions are indicated with the following symbols:
   [32m+[0m create[0m
 
 Terraform will perform the following actions:
+
+[1m  # docker_network.app_net[0m will be created
+[0m  [32m+[0m[0m resource "docker_network" "app_net" {
+      [32m+[0m[0m driver      = (known after apply)
+      [32m+[0m[0m id          = (known after apply)
+      [32m+[0m[0m internal    = (known after apply)
+      [32m+[0m[0m ipam_driver = "default"
+      [32m+[0m[0m name        = "quarkus_net"
+      [32m+[0m[0m options     = (known after apply)
+      [32m+[0m[0m scope       = (known after apply)
+
+      [32m+[0m[0m ipam_config (known after apply)
+    }
+
+[1m  # module.mailhog.docker_container.mailhog[0m will be created
+[0m  [32m+[0m[0m resource "docker_container" "mailhog" {
+      [32m+[0m[0m attach                                      = false
+      [32m+[0m[0m bridge                                      = (known after apply)
+      [32m+[0m[0m command                                     = (known after apply)
+      [32m+[0m[0m container_logs                              = (known after apply)
+      [32m+[0m[0m container_read_refresh_timeout_milliseconds = 15000
+      [32m+[0m[0m entrypoint                                  = (known after apply)
+      [32m+[0m[0m env                                         = (known after apply)
+      [32m+[0m[0m exit_code                                   = (known after apply)
+      [32m+[0m[0m hostname                                    = (known after apply)
+      [32m+[0m[0m id                                          = (known after apply)
+      [32m+[0m[0m image                                       = "mailhog/mailhog:latest"
+      [32m+[0m[0m init                                        = (known after apply)
+      [32m+[0m[0m ipc_mode                                    = (known after apply)
+      [32m+[0m[0m log_driver                                  = (known after apply)
+      [32m+[0m[0m logs                                        = false
+      [32m+[0m[0m must_run                                    = true
+      [32m+[0m[0m name                                        = "mailhog"
+      [32m+[0m[0m network_data                                = (known after apply)
+      [32m+[0m[0m network_mode                                = "bridge"
+      [32m+[0m[0m read_only                                   = false
+      [32m+[0m[0m remove_volumes                              = true
+      [32m+[0m[0m restart                                     = "unless-stopped"
+      [32m+[0m[0m rm                                          = false
+      [32m+[0m[0m runtime                                     = (known after apply)
+      [32m+[0m[0m security_opts                               = (known after apply)
+      [32m+[0m[0m shm_size                                    = (known after apply)
+      [32m+[0m[0m start                                       = true
+      [32m+[0m[0m stdin_open                                  = false
+      [32m+[0m[0m stop_signal                                 = (known after apply)
+      [32m+[0m[0m stop_timeout                                = (known after apply)
+      [32m+[0m[0m tty                                         = false
+      [32m+[0m[0m wait                                        = false
+      [32m+[0m[0m wait_timeout                                = 60
+
+      [32m+[0m[0m healthcheck (known after apply)
+
+      [32m+[0m[0m labels {
+          [32m+[0m[0m label = "app"
+          [32m+[0m[0m value = "mailhog"
+        }
+      [32m+[0m[0m labels {
+          [32m+[0m[0m label = "purpose"
+          [32m+[0m[0m value = "smtp testing"
+        }
+
+      [32m+[0m[0m networks_advanced {
+          [32m+[0m[0m aliases      = []
+          [32m+[0m[0m name         = "quarkus_net"
+            [90m# (2 unchanged attributes hidden)[0m[0m
+        }
+
+      [32m+[0m[0m ports {
+          [32m+[0m[0m external = 1025
+          [32m+[0m[0m internal = 1025
+          [32m+[0m[0m ip       = "0.0.0.0"
+          [32m+[0m[0m protocol = "tcp"
+        }
+      [32m+[0m[0m ports {
+          [32m+[0m[0m external = 8025
+          [32m+[0m[0m internal = 8025
+          [32m+[0m[0m ip       = "0.0.0.0"
+          [32m+[0m[0m protocol = "tcp"
+        }
+    }
+
+[1m  # module.mysql.docker_container.flyway_migration[0m will be created
+[0m  [32m+[0m[0m resource "docker_container" "flyway_migration" {
+      [32m+[0m[0m attach                                      = false
+      [32m+[0m[0m bridge                                      = (known after apply)
+      [32m+[0m[0m command                                     = [
+          [32m+[0m[0m <<-EOT
+                echo "Listing migration files in /flyway/sql:"
+                ls -l /flyway/sql || echo "No files found"
+                echo "Waiting for MySQL..."
+                for i in $(seq 1 20); do
+                  flyway info && break || echo "Waiting..."; sleep 3;
+                done
+                echo "Cleaning and migrating..."
+                flyway clean
+                flyway migrate
+            EOT,
+        ]
+      [32m+[0m[0m container_logs                              = (known after apply)
+      [32m+[0m[0m container_read_refresh_timeout_milliseconds = 15000
+      [32m+[0m[0m entrypoint                                  = [
+          [32m+[0m[0m "sh",
+          [32m+[0m[0m "-c",
+        ]
+      [32m+[0m[0m env                                         = [
+          [32m+[0m[0m "FLYWAY_CLEAN_DISABLED=false",
+          [32m+[0m[0m "FLYWAY_CONNECT_RETRIES=10",
+          [32m+[0m[0m "FLYWAY_CONNECT_RETRIES_INTERVAL=3",
+          [32m+[0m[0m "FLYWAY_LOCATIONS=filesystem:/flyway/sql",
+          [32m+[0m[0m "FLYWAY_PASSWORD=admin123",
+          [32m+[0m[0m "FLYWAY_URL=jdbc:mysql://quarkus-mysql:3306/quarkusdb",
+          [32m+[0m[0m "FLYWAY_USER=admin",
+        ]
+      [32m+[0m[0m exit_code                                   = (known after apply)
+      [32m+[0m[0m hostname                                    = (known after apply)
+      [32m+[0m[0m id                                          = (known after apply)
+      [32m+[0m[0m image                                       = "flyway/flyway:10.11"
+      [32m+[0m[0m init                                        = (known after apply)
+      [32m+[0m[0m ipc_mode                                    = (known after apply)
+      [32m+[0m[0m log_driver                                  = (known after apply)
+      [32m+[0m[0m logs                                        = false
+      [32m+[0m[0m must_run                                    = true
+      [32m+[0m[0m name                                        = "flyway-init"
+      [32m+[0m[0m network_data                                = (known after apply)
+      [32m+[0m[0m network_mode                                = "bridge"
+      [32m+[0m[0m read_only                                   = false
+      [32m+[0m[0m remove_volumes                              = true
+      [32m+[0m[0m restart                                     = "no"
+      [32m+[0m[0m rm                                          = false
+      [32m+[0m[0m runtime                                     = (known after apply)
+      [32m+[0m[0m security_opts                               = (known after apply)
+      [32m+[0m[0m shm_size                                    = (known after apply)
+      [32m+[0m[0m start                                       = true
+      [32m+[0m[0m stdin_open                                  = false
+      [32m+[0m[0m stop_signal                                 = (known after apply)
+      [32m+[0m[0m stop_timeout                                = (known after apply)
+      [32m+[0m[0m tty                                         = false
+      [32m+[0m[0m wait                                        = false
+      [32m+[0m[0m wait_timeout                                = 60
+
+      [32m+[0m[0m healthcheck (known after apply)
+
+      [32m+[0m[0m labels (known after apply)
+
+      [32m+[0m[0m networks_advanced {
+          [32m+[0m[0m aliases      = []
+          [32m+[0m[0m name         = "quarkus_net"
+            [90m# (2 unchanged attributes hidden)[0m[0m
+        }
+
+      [32m+[0m[0m volumes {
+          [32m+[0m[0m container_path = "/flyway/sql"
+          [32m+[0m[0m host_path      = "/mnt/d/Quarkus_Admin/quarkus-admin-sudothis/terraform/modules/mysql/flyway/sql"
+            [90m# (2 unchanged attributes hidden)[0m[0m
+        }
+    }
 
 [1m  # module.mysql.docker_container.mysql[0m will be created
 [0m  [32m+[0m[0m resource "docker_container" "mysql" {
@@ -46,7 +239,20 @@ Terraform will perform the following actions:
       [32m+[0m[0m wait                                        = false
       [32m+[0m[0m wait_timeout                                = 60
 
-      [32m+[0m[0m healthcheck (known after apply)
+      [32m+[0m[0m healthcheck {
+          [32m+[0m[0m interval       = "10s"
+          [32m+[0m[0m retries        = 5
+          [32m+[0m[0m start_interval = "0s"
+          [32m+[0m[0m start_period   = "5s"
+          [32m+[0m[0m test           = [
+              [32m+[0m[0m "CMD",
+              [32m+[0m[0m "mysqladmin",
+              [32m+[0m[0m "ping",
+              [32m+[0m[0m "-h",
+              [32m+[0m[0m "localhost",
+            ]
+          [32m+[0m[0m timeout        = "5s"
+        }
 
       [32m+[0m[0m labels (known after apply)
 
@@ -58,15 +264,9 @@ Terraform will perform the following actions:
 
       [32m+[0m[0m ports {
           [32m+[0m[0m external = 3307
-          [32m+[0m[0m internal = 3307
+          [32m+[0m[0m internal = 3306
           [32m+[0m[0m ip       = "0.0.0.0"
           [32m+[0m[0m protocol = "tcp"
-        }
-
-      [32m+[0m[0m volumes {
-          [32m+[0m[0m container_path = "/docker-entrypoint-initdb.d/init.sql"
-          [32m+[0m[0m host_path      = "/mnt/d/Quarkus_Admin/quarkus-admin-sudothis/terraform/modules/mysql/init/init.sql"
-            [90m# (2 unchanged attributes hidden)[0m[0m
         }
     }
 
@@ -87,11 +287,13 @@ Terraform will perform the following actions:
       [32m+[0m[0m container_read_refresh_timeout_milliseconds = 15000
       [32m+[0m[0m entrypoint                                  = (known after apply)
       [32m+[0m[0m env                                         = [
-          [32m+[0m[0m "QUARKUS_DATASOURCE_JDBC_URL=jdbc:mysql://quarkus-mysql:3307/quarkusdb",
+          [32m+[0m[0m "QUARKUS_DATASOURCE_JDBC_URL=jdbc:mysql://quarkus-mysql:3306/quarkusdb",
           [32m+[0m[0m "QUARKUS_DATASOURCE_PASSWORD=admin123",
           [32m+[0m[0m "QUARKUS_DATASOURCE_USERNAME=admin",
           [32m+[0m[0m "QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION=update",
-          [32m+[0m[0m "QUARKUS_PROFILE=local",
+          [32m+[0m[0m "QUARKUS_PROFILE=dev",
+          [32m+[0m[0m "SMTP_HOST=mailhog",
+          [32m+[0m[0m "SMTP_PORT=1025",
         ]
       [32m+[0m[0m exit_code                                   = (known after apply)
       [32m+[0m[0m hostname                                    = (known after apply)
@@ -138,18 +340,65 @@ Terraform will perform the following actions:
         }
     }
 
-[1m  # module.quarkus_app.docker_network.app_net[0m will be created
-[0m  [32m+[0m[0m resource "docker_network" "app_net" {
-      [32m+[0m[0m driver      = (known after apply)
-      [32m+[0m[0m id          = (known after apply)
-      [32m+[0m[0m internal    = (known after apply)
-      [32m+[0m[0m ipam_driver = "default"
-      [32m+[0m[0m name        = "quarkus_net"
-      [32m+[0m[0m options     = (known after apply)
-      [32m+[0m[0m scope       = (known after apply)
+[1m  # module.redis.docker_container.redis[0m will be created
+[0m  [32m+[0m[0m resource "docker_container" "redis" {
+      [32m+[0m[0m attach                                      = false
+      [32m+[0m[0m bridge                                      = (known after apply)
+      [32m+[0m[0m command                                     = [
+          [32m+[0m[0m "redis-server",
+          [32m+[0m[0m "--requirepass",
+          [32m+[0m[0m "letmein",
+        ]
+      [32m+[0m[0m container_logs                              = (known after apply)
+      [32m+[0m[0m container_read_refresh_timeout_milliseconds = 15000
+      [32m+[0m[0m entrypoint                                  = (known after apply)
+      [32m+[0m[0m env                                         = [
+          [32m+[0m[0m "REDIS_PASSWORD=letmein",
+        ]
+      [32m+[0m[0m exit_code                                   = (known after apply)
+      [32m+[0m[0m hostname                                    = (known after apply)
+      [32m+[0m[0m id                                          = (known after apply)
+      [32m+[0m[0m image                                       = "redis:7.2.4"
+      [32m+[0m[0m init                                        = (known after apply)
+      [32m+[0m[0m ipc_mode                                    = (known after apply)
+      [32m+[0m[0m log_driver                                  = (known after apply)
+      [32m+[0m[0m logs                                        = false
+      [32m+[0m[0m must_run                                    = true
+      [32m+[0m[0m name                                        = "quarkus-redis"
+      [32m+[0m[0m network_data                                = (known after apply)
+      [32m+[0m[0m network_mode                                = "bridge"
+      [32m+[0m[0m read_only                                   = false
+      [32m+[0m[0m remove_volumes                              = true
+      [32m+[0m[0m restart                                     = "unless-stopped"
+      [32m+[0m[0m rm                                          = false
+      [32m+[0m[0m runtime                                     = (known after apply)
+      [32m+[0m[0m security_opts                               = (known after apply)
+      [32m+[0m[0m shm_size                                    = (known after apply)
+      [32m+[0m[0m start                                       = true
+      [32m+[0m[0m stdin_open                                  = false
+      [32m+[0m[0m stop_signal                                 = (known after apply)
+      [32m+[0m[0m stop_timeout                                = (known after apply)
+      [32m+[0m[0m tty                                         = false
+      [32m+[0m[0m wait                                        = false
+      [32m+[0m[0m wait_timeout                                = 60
 
-      [32m+[0m[0m ipam_config (known after apply)
+      [32m+[0m[0m healthcheck (known after apply)
+
+      [32m+[0m[0m labels (known after apply)
+
+      [32m+[0m[0m networks_advanced {
+          [32m+[0m[0m aliases      = []
+          [32m+[0m[0m name         = "quarkus_net"
+            [90m# (2 unchanged attributes hidden)[0m[0m
+        }
+
+      [32m+[0m[0m ports {
+          [32m+[0m[0m external = 6379
+          [32m+[0m[0m internal = 6379
+          [32m+[0m[0m ip       = "0.0.0.0"
+          [32m+[0m[0m protocol = "tcp"
+        }
     }
 
-[1mPlan:[0m 4 to add, 0 to change, 0 to destroy.
+[1mPlan:[0m 7 to add, 0 to change, 0 to destroy.
 [0m

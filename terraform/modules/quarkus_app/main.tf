@@ -7,17 +7,6 @@ terraform {
   }
 }
 
-provider "docker" {}
-
-resource "docker_network" "app_net" {
-  name = "quarkus_net"
-  lifecycle {
-    prevent_destroy      = false
-    create_before_destroy = true
-    ignore_changes       = []
-  }
-}
-
 resource "docker_container" "quarkus" {
   name  = var.name
   image = var.image

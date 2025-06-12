@@ -1,0 +1,1 @@
+./terraform/environments/dev/dev_deploy.sh

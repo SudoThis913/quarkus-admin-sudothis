@@ -1,4 +1,11 @@
 # File: modules/mailhog/main.tf
+terraform {
+  required_providers {
+    docker = {
+      source = "kreuzwerker/docker"
+    }
+  }
+}
 
 resource "docker_image" "mailhog" {
   name          = "mailhog/mailhog:latest"
