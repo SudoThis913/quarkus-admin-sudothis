@@ -100,3 +100,40 @@ Run the executable with:
 For general information, see the official Quarkus documentation:
 
 [https://quarkus.io](https://quarkus.io)
+
+## SSL and Certificate Management
+
+Production deployments use a Terraform module to run Certbot in a container and sync certificates for automated SSL setup. See `terraform/modules/certbot-sync` and associated environment configurations.
+
+Certbot documentation: [https://eff.org/certbot](https://eff.org/certbot)
+
+Production deployments use a Terraform module to run Certbot in a container and sync certificates for automated SSL setup. See `terraform/modules/certbot-sync` and associated environment configurations.
+
+## User Authentication and Authorization
+
+This project uses a JPA-based Elytron security realm. Passwords are hashed with bcrypt. Sessions are managed through Redis.
+
+## Admin Interface
+
+The admin interface is rendered using Qute templates. It supports basic account management by authenticated users with administrative roles.
+
+## Environment Configuration
+
+Settings can be overridden per environment using the appropriate `application.properties` files. Sensitive values are injected via Terraform variables and secrets.
+
+## Testing
+
+Test coverage includes unit and integration tests for authentication.
+
+Run tests with:
+
+```bash
+./mvnw test
+```
+
+## Known Limitations
+
+* No frontend JavaScript enhancements
+* Email sending is only available through MailHog in development
+* Role-based access is minimal
+* Certbot assumes Cloudflare DNS access and valid token
