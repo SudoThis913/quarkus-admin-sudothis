@@ -28,8 +28,7 @@ The production deployment expects a valid `main.tf` and populated variable defin
 To deploy locally:
 
 ```bash
-cd quarkus-admin-sudothis/terraform/environments/local/
-./terraform_deploy.sh
+./local_deploy.sh
 terraform apply "tf_out.txt"
 ```
 
