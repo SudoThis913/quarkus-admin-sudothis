@@ -70,16 +70,16 @@ module "quarkus_app" {
 }
 
 module "certbot_sync" {
-  source       = "../../modules/certbot-sync"
-  providers    = { docker = docker }
+  source           = "../../modules/certbot-sync"
+  name             = "certbot-sync"
+  domain           = "yourdomain.com"
+  email            = "admin@yourdomain.com"
+  dns_provider     = "cloudflare"
+  mode             = "local"
+  credentials_path = "${path.module}/secrets/cloudflare.ini"
+  certsync_path    = "${path.module}/secrets/certsync"
+  host_list_path   = "${path.module}/secrets/hosts.txt"
+  network_name     = docker_network.app_net.name
 
-  name              = "certbot-sync"
-  domain            = "sudothis.com"
-  email             = "admin@sudothis.com"
-  dns_provider      = "cloudflare"
-  credentials_path  = "/secrets/cloudflare.ini"
-  certsync_path     = "/mnt/certsync"
-  host_list_path    = "/mnt/hosts.txt"
-  network_name      = docker_network.app_net.name
-  mode              = "local"
+  build_context    = "${path.module}/../../../../sudothis/quarkus-admin-sudothis/containers/certbot-sync"
 }
