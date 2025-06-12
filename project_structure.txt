@@ -1,0 +1,115 @@
+.
+├── Dockerfile
+├── README.md
+├── dev-keystore.p12
+├── dev_deploy.sh -> ./terraform/environments/dev/dev_deploy.sh
+├── local_deploy.sh -> ./terraform/environments/local/local_deploy.sh
+├── mvnw
+├── mvnw.cmd
+├── pom.xml
+├── prod_deploy.sh -> ./terraform/environments/prod/prod_deploy.sh
+├── src
+│   ├── main
+│   │   ├── docker
+│   │   │   ├── Dockerfile.jvm
+│   │   │   ├── Dockerfile.legacy-jar
+│   │   │   ├── Dockerfile.native
+│   │   │   └── Dockerfile.native-micro
+│   │   ├── java
+│   │   │   └── com
+│   │   │       └── sudothis
+│   │   │           ├── elytron
+│   │   │           │   └── security
+│   │   │           │       └── jpa
+│   │   │           ├── model
+│   │   │           │   └── AppUser.java
+│   │   │           ├── resource
+│   │   │           │   ├── AdminResource.java
+│   │   │           │   ├── AppUserResource.java
+│   │   │           │   └── PublicResource.java
+│   │   │           └── ssl
+│   │   │               ├── SSL_Manager.java
+│   │   │               └── SecretsCache.java
+│   │   └── resources
+│   │       ├── application-dev.properties
+│   │       ├── application.properties
+│   │       ├── conf
+│   │       │   ├── dev-keystore.p12
+│   │       │   └── gen_dev_certificate.sh
+│   │       └── templates
+│   │           └── admin.html
+│   └── test
+│       └── java
+│           └── com
+│               └── sudothis
+│                   └── auth
+│                       └── elytron
+│                           └── security
+│                               └── jpa
+│                                   ├── JpaSecurityRealmTest.java
+│                                   └── JpaSecurityRealmTestIT.java
+├── start_dev.sh
+├── terraform
+│   ├── environments
+│   │   ├── dev
+│   │   │   ├── dev_deploy.sh
+│   │   │   ├── main.tf
+│   │   │   └── terraform_notes.txt
+│   │   ├── local
+│   │   │   ├── local_deploy.sh
+│   │   │   ├── main.tf
+│   │   │   ├── run_certbot_sync.tf
+│   │   │   ├── secrets
+│   │   │   │   └── dev-keystore.p12
+│   │   │   ├── terraform.tfstate
+│   │   │   ├── terraform.tfstate.1749525130.backup
+│   │   │   ├── terraform.tfstate.1749526247.backup
+│   │   │   ├── terraform.tfstate.backup
+│   │   │   ├── terraform_deploy.sh
+│   │   │   ├── terraform_notes.txt
+│   │   │   ├── tf_out.txt
+│   │   │   ├── tf_plan
+│   │   │   └── tf_plan_readable.txt
+│   │   └── prod
+│   │       ├── Readme.md
+│   │       ├── main.tf
+│   │       ├── prod_deploy.sh
+│   │       ├── run_certbot_sync.tf
+│   │       ├── secrets
+│   │       │   ├── certsync
+│   │       │   ├── cloudflare.ini
+│   │       │   ├── cloudflare_token.txt
+│   │       │   ├── dev-keystore.p12
+│   │       │   ├── hosts.txt
+│   │       │   └── readme.md
+│   │       ├── terraform.tfstate
+│   │       ├── terraform.tfstate.backup
+│   │       └── terraform.tfvars
+│   ├── modules
+│   │   ├── certbot-sync
+│   │   │   ├── Dockerfile
+│   │   │   ├── entrypoint.sh
+│   │   │   ├── main.tf
+│   │   │   └── variables.tf
+│   │   ├── internal-cert
+│   │   │   └── main.tf
+│   │   ├── mailhog
+│   │   │   ├── main.tf
+│   │   │   └── variables.tf
+│   │   ├── mysql
+│   │   │   ├── flyway
+│   │   │   │   └── sql
+│   │   │   │       └── V1__initial_schema.sql
+│   │   │   ├── init
+│   │   │   │   └── init.sql
+│   │   │   ├── main.tf
+│   │   │   └── variables.tf
+│   │   ├── quarkus_app
+│   │   │   ├── main.tf
+│   │   │   ├── ouputs.tf
+│   │   │   └── variables.tf
+│   │   └── redis
+│   │       ├── main.tf
+│   │       └── variables.tf
+│   └── providers.tf
+└── wait-for-mysql.sh
