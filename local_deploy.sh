@@ -1,0 +1,1 @@
+./terraform/environments/local/local_deploy.sh
