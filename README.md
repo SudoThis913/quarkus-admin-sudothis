@@ -87,6 +87,20 @@ Run the executable with:
 ./target/quarkus-admin-sudothis-1.0.0-SNAPSHOT-runner
 ```
 
+## Port Reference
+
+Quarkus Application: 8080
+
+Quarkus Dev UI: 8080/q/dev/
+
+Redis: 6379
+
+MySQL: 3306
+
+MailHog UI: 8025
+
+MailHog SMTP: 1025
+
 ## Related Documentation
 
 * [Hibernate ORM with Panache](https://quarkus.io/guides/hibernate-orm-panache)
