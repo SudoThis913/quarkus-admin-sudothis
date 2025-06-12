@@ -1,72 +1,102 @@
 # quarkus-admin-sudothis
 
-This is the beginning of a FOSS project to create a django-like admin page in Quarkus.
-The goal of this project is to provide the basic scaffolding for secure server-side session hosting and an admin panel for user account administration.
-Technologies used: Quarkus, Redis, MySql8, MailHog, Java 17.
-To set up local environment:
+This is a free and open-source project to create a Django-style admin interface using Quarkus. It serves as a basic scaffold for secure user authentication, stateless session handling, and account administration.
+
+## Overview
+
+This project includes Terraform scripts to deploy the application into various environments using Docker containers.
+
+Deployment scripts are symlinked in the project root:
+
+* `local_deploy.sh`
+* `dev_deploy.sh`
+* `prod_deploy.sh` (requires additional configuration; see `terraform/environments/prod/`)
+
+The production deployment expects a valid `main.tf` and populated variable definitions. Use `environment/local` as a reference and supply the necessary values.
+
+## Technologies
+
+* Quarkus (Java 17)
+* Redis
+* MySQL 8
+* MailHog
+* Docker
+* Terraform
+
+## Local Setup
+
+To deploy locally:
+
+```bash
 cd quarkus-admin-sudothis/terraform/environments/local/
-terraform_deploy.sh
+./terraform_deploy.sh
 terraform apply "tf_out.txt"
+```
 
+## Development Mode
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+To run the application in development mode with live coding:
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
-
-## Running the application in dev mode
-
-You can run your application in dev mode that enables live coding using:
-
-```shell script
+```bash
 ./mvnw quarkus:dev
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+The Quarkus Dev UI is available at:
 
-## Packaging and running the application
+```
+http://localhost:8080/q/dev/
+```
 
-The application can be packaged using:
+## Packaging the Application
 
-```shell script
+To build the application:
+
+```bash
 ./mvnw package
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+This will generate output in the `target/quarkus-app/` directory. To run the application:
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
-
-If you want to build an _über-jar_, execute the following command:
-
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
+```bash
+java -jar target/quarkus-app/quarkus-run.jar
 ```
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+To build an uber-jar:
 
-## Creating a native executable
+```bash
+./mvnw package -Dquarkus.package.jar.type=uber-jar
+java -jar target/*-runner.jar
+```
 
-You can create a native executable using:
+## Native Executable
 
-```shell script
+To build a native executable:
+
+```bash
 ./mvnw package -Dnative
 ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
+Or, using a container:
 
-```shell script
+```bash
 ./mvnw package -Dnative -Dquarkus.native.container-build=true
 ```
 
-You can then execute your native executable with: `./target/quarkus-admin-sudothis-1.0.0-SNAPSHOT-runner`
+Run the executable with:
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+```bash
+./target/quarkus-admin-sudothis-1.0.0-SNAPSHOT-runner
+```
 
-## Related Guides
+## Related Documentation
 
-- Hibernate ORM with Panache ([guide](https://quarkus.io/guides/hibernate-orm-panache)): Simplify your persistence code for Hibernate ORM via the active record or the repository pattern
-- SmallRye Health ([guide](https://quarkus.io/guides/smallrye-health)): Monitor service health
-- JDBC Driver - MySQL ([guide](https://quarkus.io/guides/datasource)): Connect to the MySQL database via JDBC
-- REST ([guide](https://quarkus.io/guides/rest)): A Jakarta REST implementation utilizing build time processing and Vert.x. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.
-- Redis Client ([guide](https://quarkus.io/guides/redis)): Connect to Redis in either imperative or reactive style
-- REST Jackson ([guide](https://quarkus.io/guides/rest#json-serialisation)): Jackson serialization support for Quarkus REST. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it
+* [Hibernate ORM with Panache](https://quarkus.io/guides/hibernate-orm-panache)
+* [SmallRye Health Checks](https://quarkus.io/guides/smallrye-health)
+* [MySQL JDBC Driver](https://quarkus.io/guides/datasource)
+* [Quarkus REST](https://quarkus.io/guides/rest)
+* [Redis Client](https://quarkus.io/guides/redis)
+* [Jackson Serialization](https://quarkus.io/guides/rest#json-serialisation)
+
+For general information, see the official Quarkus documentation:
+
+[https://quarkus.io](https://quarkus.io)
