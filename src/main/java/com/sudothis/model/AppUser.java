@@ -1,6 +1,7 @@
 // src/main/java/com/sudothis/model/AppUser.java
 package com.sudothis.model;
 
+import com.sudothis.audit.AuditListener;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -16,6 +17,7 @@ import java.time.Instant;
  */
 @Entity
 @Table(name = "APP_USER")
+@EntityListeners(AuditListener.class)
 public class AppUser extends PanacheEntity {
 
     /** Copied from Keycloak's {@code preferred_username} claim for convenience. */

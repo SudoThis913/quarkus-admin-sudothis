@@ -24,6 +24,18 @@ public class AppUserResource {
     @Inject
     SecurityIdentity identity;
 
+    public record CreateUserDto(String username, String email, String keycloakSub) {}
+
+    @POST
+    @RolesAllowed("admin")
+    @Operation(summary = "Create new user profile")
+    @SecurityRequirement(name = "jwt")
+    @jakarta.transaction.Transactional
+    public Response create(CreateUserDto dto) {
+        AppUser.ensureExists(dto.keycloakSub, dto.username, dto.email);
+        return Response.status(Response.Status.CREATED).build();
+    }
+
     /** List all users – requires admin realm‑role. */
     @GET
     @RolesAllowed("admin")
