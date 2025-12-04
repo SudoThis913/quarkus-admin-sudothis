@@ -2,10 +2,13 @@
 package com.sudothis.model;
 
 import com.sudothis.audit.AuditListener;
+import com.sudothis.meta.AdminResource;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Lightweight user profile that complements Keycloak‑based authentication.
@@ -18,6 +21,7 @@ import java.time.Instant;
 @Entity
 @Table(name = "APP_USER")
 @EntityListeners(AuditListener.class)
+@AdminResource(displayName = "Users")
 public class AppUser extends PanacheEntity {
 
     /** Copied from Keycloak's {@code preferred_username} claim for convenience. */
@@ -38,6 +42,18 @@ public class AppUser extends PanacheEntity {
 
     @Column(name = "IS_ACTIVE")
     public boolean active = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "org_id")
+    public Organization organization;
+
+    @ManyToMany
+    @JoinTable(
+        name = "USER_TEAM",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "team_id")
+    )
+    public Set<Team> teams = new HashSet<>();
 
     // ---------------------------------------------------------------------
     // Factory helpers
