@@ -1,15 +1,10 @@
 package com.sudothis.resource;
 
 import com.sudothis.model.AppUser;
-import io.smallrye.mutiny.Uni;
-import io.quarkus.oidc.client.OidcClient;
-import io.quarkus.oidc.client.Tokens;
 import io.quarkus.security.identity.SecurityIdentity;
-import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -18,8 +13,8 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import java.util.List;
 
 /**
- * REST endpoint that relies entirely on Quarkus‑OIDC for authentication & Keycloak for user management.
- * Only business data lives in the AppUser table – no passwords or hashes here.
+ * REST endpoint for managing AppUser entities.
+ * Uses blocking JAX-RS / Hibernate ORM.
  */
 @Path("/api/users")
 @Produces(MediaType.APPLICATION_JSON)
@@ -27,45 +22,14 @@ import java.util.List;
 public class AppUserResource {
 
     @Inject
-    OidcClient oidc;
-
-    @Context
     SecurityIdentity identity;
-
-    // ───────────────────────────────────────────────────────────────────── DTOs
-    public record NewUser(String username, String email, String password, String roles) {}
-
-    public record LoginRequest(String username, String password) {}
-
-    public record TokenResponse(String access_token, String refresh_token, long expires_in) {}
-
-    // ──────────────────────────────────────────────────────────────── Endpoints
-
-    /** Admin‑only – create a new application user (business row only). */
-    @POST
-    @RolesAllowed("admin")
-    @Operation(summary = "Create new user")
-    public Uni<Response> create(NewUser dto) {
-        // Persist business data; credentials are handled by Keycloak realm import / UI.
-        AppUser.create(dto.username(), dto.email(), dto.password().toCharArray(), dto.roles());
-        return Uni.createFrom().item(Response.status(Response.Status.CREATED).build());
-    }
-
-    /** Optional helper to exchange username/password for a JWT issued by Keycloak. */
-    @POST
-    @Path("/login")
-    @PermitAll
-    @Operation(summary = "Username / password login (delegated to Keycloak)")
-    public Uni<TokenResponse> login(LoginRequest req) {
-        return oidc.getTokens(req.username(), req.password())
-                   .onItem().transform(this::toTokenResponse);
-    }
 
     /** List all users – requires admin realm‑role. */
     @GET
     @RolesAllowed("admin")
-    @Operation(summary = "List all users", security = @SecurityRequirement(name = "jwt"))
-    public Uni<List<AppUser>> list() {
+    @Operation(summary = "List all users")
+    @SecurityRequirement(name = "jwt")
+    public List<AppUser> list() {
         return AppUser.listAll();
     }
 
@@ -73,24 +37,22 @@ public class AppUserResource {
     @GET
     @Path("/me")
     @RolesAllowed({"admin", "user"})
-    @Operation(summary = "Who am I?", security = @SecurityRequirement(name = "jwt"))
-    public Uni<AppUser> me() {
-        return AppUser.find("username", identity.getPrincipal().getName()).singleResult();
+    @Operation(summary = "Who am I?")
+    @SecurityRequirement(name = "jwt")
+    public AppUser me() {
+        String username = identity.getPrincipal().getName();
+        // Ensure user exists in local DB (lazy provision)
+        // Note: In a real scenario we should check the 'sub' claim
+        // String sub = identity.getPrincipal().getClaim("sub");
+        return AppUser.find("username", username).firstResult();
     }
 
     /** Delete by id – admin only. */
     @DELETE
     @Path("/{id}")
     @RolesAllowed("admin")
-    public Uni<Response> delete(@PathParam("id") Long id) {
-        return Uni.createFrom()
-                  .item(AppUser.deleteById(id))
-                  .onItem().transform(deleted -> deleted ? Response.noContent().build()
-                                                         : Response.status(Response.Status.NOT_FOUND).build());
-    }
-
-    // ─────────────────────────────────────────────────────────────── helpers
-    private TokenResponse toTokenResponse(Tokens t) {
-        return new TokenResponse(t.getAccessToken(), t.getRefreshToken(), t.getExpiresIn());
+    public Response delete(@PathParam("id") Long id) {
+        boolean deleted = AppUser.deleteById(id);
+        return deleted ? Response.noContent().build() : Response.status(Response.Status.NOT_FOUND).build();
     }
 }

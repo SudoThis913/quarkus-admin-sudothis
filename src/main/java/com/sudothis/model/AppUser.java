@@ -22,6 +22,10 @@ public class AppUser extends PanacheEntity {
     @Column(name = "USERNAME", nullable = false)
     public String username;
 
+    /** The unique subject ID from Keycloak/OIDC token. */
+    @Column(name = "KEYCLOAK_SUB", unique = true)
+    public String keycloakSub;
+
     /** Optional – only stored if realm is configured to include e‑mail in ID token. */
     @Email
     @Column(name = "EMAIL")
