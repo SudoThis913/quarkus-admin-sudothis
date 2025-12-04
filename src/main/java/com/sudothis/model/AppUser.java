@@ -1,48 +1,31 @@
 // src/main/java/com/sudothis/model/AppUser.java
 package com.sudothis.model;
 
-import com.sudothis.security.Argon2PasswordProvider;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import io.quarkus.security.jpa.Password;
-import io.quarkus.security.jpa.PasswordType;
-import io.quarkus.security.jpa.Roles;
-import io.quarkus.security.jpa.UserDefinition;
-import io.quarkus.security.jpa.Username;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import java.time.Instant;
-import java.util.Arrays;
 
 /**
- * Panache entity representing an application user. Relies on PanacheEntity's builtin `id` field.
+ * Lightweight user profile that complements Keycloak‑based authentication.
+ * <p>
+ * Keycloak/OIDC is the single source of truth for identity and roles, so we
+ * store only the data that is <em>local‑to‑this‑service</em> (timestamps,
+ * preferences, feature flags …).  The record is created lazily the first time
+ * we see a Keycloak token with an unknown {@code sub} claim.
  */
 @Entity
 @Table(name = "APP_USER")
-@UserDefinition
 public class AppUser extends PanacheEntity {
 
-    // ---------------------------------------------------------------------
-    // Columns (PanacheEntity already provides `id` primary key)
-    // ---------------------------------------------------------------------
-
-    @Username
-    @Column(name = "USERNAME", unique = true, nullable = false)
+    /** Copied from Keycloak's {@code preferred_username} claim for convenience. */
+    @Column(name = "USERNAME", nullable = false)
     public String username;
 
+    /** Optional – only stored if realm is configured to include e‑mail in ID token. */
     @Email
-    @Column(name = "EMAIL", unique = true, nullable = false)
+    @Column(name = "EMAIL")
     public String email;
-
-    @Column(name = "EMAIL_VERIFIED")
-    public boolean emailVerified = false;
-
-    @Password(value = PasswordType.CUSTOM, provider = Argon2PasswordProvider.class)
-    @Column(name = "PASSWORD_HASH", nullable = false)
-    public String passwordHash;
-
-    @Roles
-    @Column(name = "ROLES", nullable = false)
-    public String roles;
 
     @Column(name = "CREATED_AT", nullable = false)
     public Instant createdAt = Instant.now();
@@ -50,41 +33,25 @@ public class AppUser extends PanacheEntity {
     @Column(name = "IS_ACTIVE")
     public boolean active = true;
 
-    @Column(name= "VERIFIED")
-    public boolean verified = false;
+    // ---------------------------------------------------------------------
+    // Factory helpers
+    // ---------------------------------------------------------------------
 
-    // ---------------------------------------------------------------------
-    // Factory helper
-    // ---------------------------------------------------------------------
-    public static AppUser create(String username, String email, char[] rawPassword, String roles) {
+    /**
+     * Provision (or fetch) a local profile from Keycloak token attributes.
+     */
+    public static AppUser ensureExists(String keycloakSub,
+                                       String preferredUsername,
+                                       String email) {
+        AppUser existing = find("keycloakSub", keycloakSub).firstResult();
+        if (existing != null) {
+            return existing;
+        }
         AppUser user = new AppUser();
-        user.username = username;
-        user.email = email;
-        user.roles = roles;
-
-        user.passwordHash = Argon2PasswordProvider.hashPassword(rawPassword);
-        Arrays.fill(rawPassword, '\0');
-
+        user.keycloakSub = keycloakSub;
+        user.username    = preferredUsername;
+        user.email       = email;
         user.persist();
         return user;
-    }
-
-    // ---------------------------------------------------------------------
-    // Accessors (used by REST layer)
-    // ---------------------------------------------------------------------
-    public String getEmail()             { return email; }
-    public void   setEmail(String email) { this.email = email; }
-    public String getRoles()             { return roles; }
-    public void   setRoles(String roles) { this.roles = roles; }
-
-    // ---------------------------------------------------------------------
-    // Delete helpers
-    // ---------------------------------------------------------------------
-    public static boolean deleteByUsername(String username) {
-        return delete("username", username) > 0;
-    }
-
-    public static boolean deleteById(Long userId) {
-        return delete("id", userId) > 0;
     }
 }

@@ -47,11 +47,28 @@
         </dependency>
         <!--               SECURITY DEPENDENCIES              -->
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-jwt-build</artifactId>
+        </dependency>
+                <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-cache</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
-                <dependency>
+        <!--              PERSISTANCE / DB / REDIS          -->
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx-http</artifactId>
         </dependency>
@@ -59,6 +76,7 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-security-jpa</artifactId>
         </dependency>
+        <!--              TEST DEPENDENCIES                    -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-elytron-security-common</artifactId>
@@ -67,17 +85,16 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-elytron-security-properties-file</artifactId>
         </dependency>
-        <!--              PERSISTANCE / DB / REDIS          -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-jwt</artifactId>
         </dependency>
+        <!--              VIEW TEMPLATES                -->
         <dependency>
             <groupId>de.mkammerer</groupId>
             <artifactId>argon2-jvm</artifactId>
             <version>2.11</version>
         </dependency>
-        <!--              TEST DEPENDENCIES                    -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-mysql</artifactId>
@@ -90,7 +107,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-validator</artifactId>
         </dependency>
-        <!--              VIEW TEMPLATES                -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>

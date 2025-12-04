@@ -1,0 +1,23 @@
+<!-- src/main/resources/templates/login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login – SudoThis</title>
+</head>
+<body>
+<h1>Login</h1>
+<form id="loginForm" action="/api/users/login" method="post">
+    <label>Username <input name="username" required></label><br>
+    <label>Password <input name="password" type="password" required></label><br>
+    <input type="hidden" name="csrf_token" id="csrfField">
+    <button type="submit">Sign in</button>
+</form>
+
+<script>
+// Copy csrf_token cookie into hidden field so the double‑submit will pass
+const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+if (match) document.getElementById("csrfField").value = decodeURIComponent(match[1]);
+</script>
+</body>
+</html>

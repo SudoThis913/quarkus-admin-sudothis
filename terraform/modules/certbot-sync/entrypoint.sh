@@ -29,7 +29,7 @@ should_renew() {
 
 log "Starting cert manager in mode: $MODE"
 
-if [[ "$MODE" == "dev" ]]; then
+if [[ "$MODE" == "dev" || "$MODE" == "local" ]]; then
   log "Using existing self-signed dev certificate for $DOMAIN."
 elif [[ "$MODE" == "prod" || "$MODE" == "auto" ]]; then
   if check_custom_cert; then

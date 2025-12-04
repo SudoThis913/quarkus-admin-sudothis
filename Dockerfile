@@ -12,5 +12,9 @@ COPY --from=build /build/target/quarkus-app/*.jar /app/
 COPY --from=build /build/target/quarkus-app/app/ /app/app/
 COPY --from=build /build/target/quarkus-app/quarkus/ /app/quarkus/
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app/quarkus-run.jar"]
+# Retry Quarkus boot if mysql not ready yet
+COPY wait-for-mysql.sh /wait-for-mysql.sh
+RUN chmod +x /wait-for-mysql.sh
+# Prod mode entrypoint
+# ENTRYPOINT ["/wait-for-mysql.sh"]
 

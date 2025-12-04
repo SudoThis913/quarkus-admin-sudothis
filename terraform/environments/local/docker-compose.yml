@@ -1,0 +1,54 @@
+# docker-compose.yml  (lives in terraform/environments/local)
+services:
+  mysql:
+    image: mysql:8
+    container_name: quarkus-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpw
+    volumes:
+      - quarkus-mysql-data:/var/lib/mysql
+    networks: [quarkus_net]
+
+  redis:
+    image: redis:7
+    container_name: quarkus-redis
+    networks: [quarkus_net]
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: mailhog
+    ports: ["8025:8025"]
+    networks: [quarkus_net]
+
+  certbot:
+    image: certbot/certbot:v2.11.0
+    container_name: certbot-sync-run
+    command: ["sh", "-c", "trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done"]
+    volumes:
+      - certbot_data:/etc/letsencrypt
+    networks: [quarkus_net]
+
+  flyway:
+    image: flyway/flyway:10.12
+    container_name: flyway-init
+    depends_on: [mysql]
+    command: -url=jdbc:mysql://quarkus-mysql:3306/app -user=root -password=rootpw migrate
+    networks: [quarkus_net]
+
+  app:
+    build:
+      context: ../..            # adjust to quarkus-admin root
+      dockerfile: src/main/docker/Dockerfile.jvm
+    container_name: quarkus-admin
+    depends_on: [mysql, redis]
+    environment:
+      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:mysql://quarkus-mysql:3306/app
+    ports: ["8081:8081"]
+    networks: [quarkus_net]
+
+volumes:
+  quarkus-mysql-data:
+  certbot_data:
+
+networks:
+  quarkus_net:

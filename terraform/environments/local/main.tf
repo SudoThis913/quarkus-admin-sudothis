@@ -69,17 +69,18 @@ module "quarkus_app" {
   depends_on = [module.mysql, module.redis]
 }
 
+/**
 module "certbot_sync" {
   source           = "../../modules/certbot-sync"
   name             = "certbot-sync"
   domain           = "yourdomain.com"
   email            = "admin@yourdomain.com"
   dns_provider     = "cloudflare"
-  mode             = "local"
+  mode             = "dev"
   credentials_path = "${path.module}/secrets/cloudflare.ini"
   certsync_path    = "${path.module}/secrets/certsync"
   host_list_path   = "${path.module}/secrets/hosts.txt"
   network_name     = docker_network.app_net.name
 
   build_context    = "${path.module}/../../../../sudothis/quarkus-admin-sudothis/containers/certbot-sync"
-}
+} **/

@@ -8,10 +8,13 @@ terraform {
 
 resource "docker_image" "certbot_sync" {
   name = var.name
+
   build {
-    context    = var.build_context
+    # prefer caller override; otherwise use this module’s directory
+    context    = var.build_context != "" ? var.build_context : path.module
     dockerfile = "Dockerfile"
     build_args = {
+      # forces rebuild every plan/apply so you always get latest entry-point
       FORCE_REBUILD = uuid()
     }
   }
