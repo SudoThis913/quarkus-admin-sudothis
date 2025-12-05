@@ -6,17 +6,22 @@ import jakarta.enterprise.event.Observes;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.EntityType;
+import jakarta.persistence.metamodel.PluralAttribute;
 import jakarta.persistence.metamodel.SingularAttribute;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class ModelRegistry {
 
+    private static final Logger LOG = Logger.getLogger(ModelRegistry.class);
+
     private final Map<String, EntityDefinition> registry = new HashMap<>();
+    private final Map<String, Class<?>> classRegistry = new HashMap<>();
 
     void onStart(@Observes StartupEvent ev, EntityManager em) {
         Set<EntityType<?>> entities = em.getMetamodel().getEntities();
@@ -24,12 +29,12 @@ public class ModelRegistry {
         for (EntityType<?> entity : entities) {
             Class<?> javaType = entity.getJavaType();
             if (javaType.isAnnotationPresent(AdminResource.class)) {
-                register(entity);
+                register(entity, em);
             }
         }
     }
 
-    private void register(EntityType<?> entity) {
+    private void register(EntityType<?> entity, EntityManager em) {
         Class<?> javaType = entity.getJavaType();
         AdminResource annotation = javaType.getAnnotation(AdminResource.class);
         
@@ -44,25 +49,42 @@ public class ModelRegistry {
                 required = !((SingularAttribute<?, ?>) attr).isOptional();
             }
             
+            String reference = null;
+            if (attr.isAssociation()) {
+                Class<?> referenceType = null;
+                if (attr.isCollection()) { // PluralAttribute (OneToMany, ManyToMany)
+                    PluralAttribute<?, ?, ?> pa = (PluralAttribute<?, ?, ?>) attr;
+                    referenceType = pa.getElementType().getJavaType();
+                } else { // SingularAttribute (ManyToOne, OneToOne)
+                    SingularAttribute<?, ?> sa = (SingularAttribute<?, ?>) attr;
+                    referenceType = sa.getJavaType();
+                }
+
+                if (referenceType != null && referenceType.isAnnotationPresent(jakarta.persistence.Entity.class)) {
+                    reference = referenceType.getSimpleName();
+                }
+            }
+
             fields.add(new FieldDefinition(
                 attr.getName(),
                 attr.getJavaType().getSimpleName(),
                 required,
                 attr.isCollection(),
-                attr.isAssociation() ? "TODO_RELATION" : null 
+                reference 
             ));
         }
 
         EntityDefinition def = new EntityDefinition(
             name,
             displayName,
-            "/api/admin/resources/" + name,
+            "/api/admin/data/" + name,
             annotation.readOnly(),
             fields
         );
 
         registry.put(name, def);
-        System.out.println("[Meta] Registered Admin Resource: " + name);
+        classRegistry.put(name, javaType);
+        LOG.infof("[Meta] Registered Admin Resource: %s with %d fields", name, fields.size());
     }
 
     public List<EntityDefinition> getDefinitions() {
@@ -71,5 +93,9 @@ public class ModelRegistry {
     
     public EntityDefinition getDefinition(String name) {
         return registry.get(name);
+    }
+
+    public Class<?> getEntityClass(String name) {
+        return classRegistry.get(name);
     }
 }
