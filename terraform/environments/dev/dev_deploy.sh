@@ -31,16 +31,17 @@ done
 echo "Cleaning up stale Docker containers..."
 
 # Cleanup logic (simplified for dev)
-for c in quarkus-mysql quarkus-admin; do
+# Prefixing with dev- ensures we don't kill local/prod containers
+for c in dev-quarkus-mysql dev-quarkus-admin dev-quarkus-redis; do
   if docker container inspect "$c" &>/dev/null; then
     echo "Removing existing container: $c"
     docker rm -f "$c"
   fi
 done
 
-if $FULL_RESET && docker network inspect quarkus_net &>/dev/null; then
-  echo "Removing existing network: quarkus_net"
-  docker network rm quarkus_net
+if $FULL_RESET && docker network inspect dev_net &>/dev/null; then
+  echo "Removing existing network: dev_net"
+  docker network rm dev_net
 fi
 
 if $FULL_RESET && docker image inspect mysql:8 &>/dev/null; then

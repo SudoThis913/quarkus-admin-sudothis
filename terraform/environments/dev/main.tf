@@ -7,7 +7,7 @@ terraform {
 }
 
 resource "docker_network" "app_net" {
-  name = "quarkus_net"
+  name = "dev_net"
   lifecycle {
     prevent_destroy = false
     create_before_destroy = true
@@ -18,10 +18,10 @@ resource "docker_network" "app_net" {
 module "redis" {
   source       = "../../modules/redis"
   providers    = { docker = docker }
-  name         = "quarkus-redis"
+  name         = "dev-quarkus-redis"
   port         = 6379
   network_name = docker_network.app_net.name
-  password     = "letmein" # optional; remove or change
+  password     = "letmein" 
   
   env_vars = {
     REDIS_PASSWORD = "letmein"
@@ -31,7 +31,7 @@ module "redis" {
 module "mysql" {
   source   = "../../modules/mysql"
   providers = {docker = docker}
-  name     = "quarkus-mysql"
+  name     = "dev-quarkus-mysql"
   username = "admin"
   password = "admin123"
   database = "quarkusdb"
@@ -42,7 +42,7 @@ module "mysql" {
 module "quarkus_app" {
   source         = "../../modules/quarkus_app"
   providers = {docker = docker }
-  name           = "quarkus-admin"
+  name           = "dev-quarkus-admin"
   image          = "quarkus-admin:dev"
   internal_port = 8080
   external_port = 8082
@@ -50,10 +50,11 @@ module "quarkus_app" {
   
   env_vars = {
     QUARKUS_PROFILE = "dev"
-    QUARKUS_DATASOURCE_JDBC_URL  = "jdbc:mysql://quarkus-mysql:3306/quarkusdb"
+    QUARKUS_DATASOURCE_JDBC_URL  = "jdbc:mysql://dev-quarkus-mysql:3306/quarkusdb"
     QUARKUS_DATASOURCE_USERNAME = "admin"
     QUARKUS_DATASOURCE_PASSWORD = "admin123"
     QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION = "update"
+    QUARKUS_REDIS_HOSTS = "redis://dev-quarkus-redis:6379"
   }
   depends_on = [module.mysql]
 }
