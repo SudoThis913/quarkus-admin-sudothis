@@ -23,11 +23,11 @@ resource "docker_container" "quarkus" {
 
   volumes {
     host_path      = abspath("${path.module}/../../wait-for-mysql.sh")
-    container_path = "/usr/local/bin/wait-for-mysql.sh"
+    container_path = "/wait-for-mysql.sh"
     read_only      = true
   }
 
-  entrypoint = ["/usr/local/bin/wait-for-mysql.sh"]
+  entrypoint = ["/wait-for-mysql.sh"]
   command = ["/opt/jboss/container/java/run/run-java.sh"]
 
   networks_advanced {
