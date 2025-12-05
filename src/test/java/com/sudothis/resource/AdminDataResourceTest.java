@@ -10,7 +10,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 
 @QuarkusTest
@@ -103,5 +102,36 @@ public class AdminDataResourceTest {
             .statusCode(200)
             .body("size()", is(1))
             .body("[0].name", Matchers.containsString("Another Org"));
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = {"admin"})
+    public void testCreateUserWithOrgId() {
+        // 1. Create Org
+        String orgName = "RelOrg " + System.currentTimeMillis();
+        int orgId = given()
+            .contentType(ContentType.JSON)
+            .body("{\"name\": \"" + orgName + "\", \"active\": true}")
+        .when()
+            .post("/api/admin/data/Organization")
+        .then()
+            .statusCode(201)
+            .extract().path("id");
+
+        // 2. Create User with Org ID (Scalar)
+        String userName = "user_rel_" + System.currentTimeMillis();
+        String userJson = String.format(
+            "{\"username\": \"%s\", \"email\": \"%s@test.com\", \"organization\": %d}", 
+            userName, userName, orgId
+        );
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(userJson)
+        .when()
+            .post("/api/admin/data/AppUser")
+        .then()
+            .statusCode(201)
+            .body("organization.id", Matchers.equalTo(orgId));
     }
 }

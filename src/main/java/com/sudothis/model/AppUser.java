@@ -1,6 +1,7 @@
 // src/main/java/com/sudothis/model/AppUser.java
 package com.sudothis.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sudothis.audit.AuditListener;
 import com.sudothis.meta.AdminResource;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
@@ -47,6 +48,7 @@ public class AppUser extends PanacheEntity {
     @JoinColumn(name = "org_id")
     public Organization organization;
 
+    @JsonIgnore
     @ManyToMany
     @JoinTable(
         name = "USER_TEAM",

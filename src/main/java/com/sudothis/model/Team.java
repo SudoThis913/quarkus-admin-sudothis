@@ -1,5 +1,6 @@
 package com.sudothis.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sudothis.audit.AuditListener;
 import com.sudothis.meta.AdminResource;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
@@ -20,6 +21,7 @@ public class Team extends PanacheEntity {
     @JoinColumn(name = "org_id", nullable = false)
     public Organization organization;
 
+    @JsonIgnore
     @ManyToMany(mappedBy = "teams")
     public Set<AppUser> members = new HashSet<>();
 }

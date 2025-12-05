@@ -2,6 +2,8 @@ package com.sudothis.resource;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.sudothis.meta.EntityDefinition;
 import com.sudothis.meta.FieldDefinition;
 import com.sudothis.meta.ModelRegistry;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
@@ -167,6 +169,8 @@ public class AdminDataResource {
         if (entityClass == null) return Response.status(Response.Status.NOT_FOUND).build();
 
         try {
+            preprocessPayload(entityName, payload);
+            
             Object entity = mapper.treeToValue(payload, entityClass);
             em.persist(entity);
             return Response.status(Response.Status.CREATED).entity(entity).build();
@@ -186,11 +190,32 @@ public class AdminDataResource {
         if (existing == null) return Response.status(Response.Status.NOT_FOUND).build();
 
         try {
+            preprocessPayload(entityName, payload);
+            
             mapper.readerForUpdating(existing).readValue(payload);
             em.merge(existing); 
             return Response.ok(existing).build();
         } catch (Exception e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
+
+    private void preprocessPayload(String entityName, JsonNode payload) {
+        if (payload instanceof ObjectNode) {
+            ObjectNode objNode = (ObjectNode) payload;
+            EntityDefinition def = registry.getDefinition(entityName);
+            if (def == null) return;
+
+            for (FieldDefinition field : def.fields()) {
+                if (field.reference() != null && !field.list() && objNode.has(field.name())) {
+                    JsonNode fieldNode = objNode.get(field.name());
+                    if (fieldNode.isValueNode()) {
+                        ObjectNode relNode = mapper.createObjectNode();
+                        relNode.set("id", fieldNode);
+                        objNode.set(field.name(), relNode);
+                    }
+                }
+            }
         }
     }
 
