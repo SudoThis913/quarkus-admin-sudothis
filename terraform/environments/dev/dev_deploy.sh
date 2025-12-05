@@ -34,9 +34,17 @@ echo "Cleaning up stale Docker containers..."
 # Prefixing with dev- ensures we don't kill local/prod containers
 # Also cleaning up potential stale flyway-init from previous runs
 for c in dev-quarkus-mysql dev-quarkus-admin dev-quarkus-redis dev-quarkus-mysql-flyway flyway-init; do
+  echo "Checking for container: $c"
   if docker container inspect "$c" &>/dev/null; then
-    echo "Removing existing container: $c"
-    docker rm -f "$c"
+    echo "Found container: $c. Attempting to remove..."
+    if timeout 10s docker rm -f "$c"; then # Add a 10s timeout to rm -f
+      echo "Successfully removed container: $c"
+    else
+      echo "WARNING: Failed to remove container: $c within 10 seconds. It might be stuck."
+      # Optionally, try harder or log more
+    fi
+  else
+    echo "Container $c not found or already removed."
   fi
 done
 
