@@ -45,6 +45,38 @@ for arg in "$@"; do
 done
 
 
+
+echo "Cleaning up stale Docker containers for prod environment..."
+
+# Containers that are always removed for prod environment
+for c in prod-quarkus-mysql prod-quarkus-admin prod-quarkus-redis prod-mailhog prod-certbot-sync prod-quarkus-mysql-flyway; do
+  echo "Checking for container: $c"
+  if docker container inspect "$c" &>/dev/null; then
+    echo "Found container: $c. Attempting to remove..."
+    if timeout 10s docker rm -f "$c"; then
+      echo "Successfully removed container: $c"
+    else
+      echo "WARNING: Failed to remove container: $c within 10 seconds. It might be stuck."
+    fi
+  else
+    echo "Container $c not found or already removed."
+  fi
+done
+
+# Network (only on full reset)
+if $FULL_RESET && docker network inspect prod_net &>/dev/null; then
+  echo "Removing existing network: prod_net"
+  docker network rm prod_net
+fi
+
+# Image (only on full reset)
+for img in mysql:8 redis:7 quarkus-admin:prod prod-certbot-sync; do
+  if $FULL_RESET && docker image inspect "$img" &>/dev/null; then
+    echo "Removing image: $img"
+    docker rmi -f "$img"
+  fi
+done
+
 echo "Running terraform init..."
 terraform -chdir="$SCRIPT_DIR" init -upgrade
 
