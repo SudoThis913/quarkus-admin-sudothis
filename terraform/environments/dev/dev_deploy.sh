@@ -19,8 +19,13 @@ echo "Running in $SCRIPT_DIR"
 
 # 2. CLI flags
 FULL_RESET=false
+AUTO_APPROVE=false # New variable
 for arg in "$@"; do
-  [[ $arg == --full-reset ]] && FULL_RESET=true
+  if [[ "$arg" == "--full-reset" ]]; then
+    FULL_RESET=true
+  elif [[ "$arg" == "-auto-approve" ]]; then
+    AUTO_APPROVE=true
+  fi
 done
 
 echo "Cleaning up stale Docker containers..."
@@ -45,8 +50,39 @@ fi
 
 # 3. Terraform workflow
 echo "Running Terraform deployment steps..."
-terraform init
-terraform plan -out=tf_plan
-terraform show tf_plan > tf_plan_readable.txt
+terraform -chdir="$SCRIPT_DIR" init
+terraform -chdir="$SCRIPT_DIR" plan -out=tf_plan
+terraform -chdir="$SCRIPT_DIR" show tf_plan > tf_plan_readable.txt
 
-echo -e "\nTerraform plan saved. Review with:\n  cat tf_plan_readable.txt\nThen apply with:\n  terraform apply tf_plan"
+PLAN_FILE="$SCRIPT_DIR/tf_plan"
+READABLE="$SCRIPT_DIR/tf_plan_readable.txt"
+
+echo "Terraform plan saved at:"
+echo "  $PLAN_FILE"
+echo "Review with:"
+echo "  cat $READABLE"
+
+if $AUTO_APPROVE; then
+  echo "Auto-approve enabled. Applying Terraform plan..."
+  terraform -chdir="$SCRIPT_DIR" apply -auto-approve tf_plan
+else
+  echo -e "\nReview the plan and choose an option:"
+  echo "  (a)pply - Apply the planned changes"
+  echo "  (q)uit  - Exit without applying"
+  
+  read -p "Enter choice (a/q): " choice
+  case "$choice" in
+    a|A)
+      echo "Applying Terraform plan..."
+      terraform -chdir="$SCRIPT_DIR" apply tf_plan
+      ;;
+    q|Q)
+      echo "Exiting without applying Terraform plan."
+      exit 0
+      ;;
+    *)
+      echo "Invalid choice. Exiting without applying Terraform plan."
+      exit 1
+      ;;
+  esac
+fi

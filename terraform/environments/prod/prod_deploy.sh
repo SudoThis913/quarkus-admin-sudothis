@@ -7,7 +7,7 @@ set -euo pipefail
 
 # 1. Resolve script directory (follow symlinks) and cd into it
 SOURCE="${BASH_SOURCE[0]}"
-while [[ -h $SOURCE ]]; do
+while [[ -h "$SOURCE" ]]; do
   DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
   SOURCE="$(readlink "$SOURCE")"
   [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
@@ -17,17 +17,36 @@ cd "$SCRIPT_DIR" || { echo "Cannot cd to $SCRIPT_DIR"; exit 1; }
 
 echo "Running in $SCRIPT_DIR"
 
-# ==========================
-# Toggle individual services
-# ==========================
+# 2. CLI flags
 RESET_DB=false
 RESET_REDIS=false
 RESET_QUARKUS=true
 RESET_MAILHOG=false
 RESET_CERTBOT=false
+AUTO_APPROVE=false # New variable
+
+# Parse arguments
+for arg in "$@"; do
+  case "$arg" in
+    --full-reset)
+      RESET_DB=true
+      RESET_REDIS=true
+      RESET_QUARKUS=true
+      RESET_MAILHOG=true
+      RESET_CERTBOT=true
+      ;;
+    -auto-approve)
+      AUTO_APPROVE=true
+      ;;
+    *)
+      # Ignore other args for now, or handle specific resets
+      ;;
+  esac
+done
+
 
 echo "Running terraform init..."
-terraform init -upgrade
+terraform -chdir="$SCRIPT_DIR" init -upgrade
 
 # ==========================
 # Build target list
@@ -43,10 +62,10 @@ $RESET_CERTBOT && TARGETS+=("-target=module.certbot_sync") # Updated to module
 # If no individual flags are set, do full plan
 if [[ ${#TARGETS[@]} -eq 0 ]]; then
   echo "No specific targets selected. Doing full terraform plan."
-  terraform plan -out=tf.plan | tee tf_plan_output.txt
+  terraform -chdir="$SCRIPT_DIR" plan -out=tf.plan | tee tf_plan_output.txt
 else
   echo "Planning with targets: ${TARGETS[*]}"
-  terraform plan -out=tf.plan "${TARGETS[@]}" | tee tf_plan_output.txt
+  terraform -chdir="$SCRIPT_DIR" plan -out=tf.plan "${TARGETS[@]}" | tee tf_plan_output.txt
 fi
 
 # ==========================
@@ -61,11 +80,27 @@ fi
 # ==========================
 # Apply or Prompt
 # ==========================
-if [[ "${1:-}" == "-auto-approve" ]]; then
-  echo "Auto-approve enabled. Applying..."
-  terraform apply -auto-approve tf.plan
+if $AUTO_APPROVE; then
+  echo "Auto-approve enabled. Applying Terraform plan..."
+  terraform -chdir="$SCRIPT_DIR" apply -auto-approve tf.plan
 else
-  echo "Terraform plan saved to tf.plan"
-  echo "To apply manually, run:"
-  echo "terraform apply tf.plan"
+  echo -e "\nReview the plan and choose an option:"
+  echo "  (a)pply - Apply the planned changes"
+  echo "  (q)uit  - Exit without applying"
+  
+  read -p "Enter choice (a/q): " choice
+  case "$choice" in
+    a|A)
+      echo "Applying Terraform plan..."
+      terraform -chdir="$SCRIPT_DIR" apply tf.plan
+      ;;
+    q|Q)
+      echo "Exiting without applying Terraform plan."
+      exit 0
+      ;;
+    *)
+      echo "Invalid choice. Exiting without applying Terraform plan."
+      exit 1
+      ;;
+  esac
 fi
