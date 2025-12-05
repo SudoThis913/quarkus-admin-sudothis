@@ -21,12 +21,6 @@ resource "docker_container" "quarkus" {
     "DB_PORT=${var.db_port}"
   ])
 
-  volumes {
-    host_path      = abspath("${path.module}/../../wait-for-mysql.sh")
-    container_path = "/wait-for-mysql.sh"
-    read_only      = true
-  }
-
   entrypoint = ["/wait-for-mysql.sh"]
   command = ["/opt/jboss/container/java/run/run-java.sh"]
 

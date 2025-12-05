@@ -73,7 +73,7 @@ fi
 cyan "Cleaning up stale Docker containers…"
 
 # Containers that are always removed
-for c in quarkus-mysql quarkus-redis quarkus-admin mailhog flyway-init quarkus-mysql-flyway certbot-sync-run; do
+for c in local-quarkus-mysql local-quarkus-admin local-quarkus-redis local-mailhog local-quarkus-mysql-flyway; do
   if docker container inspect "$c" &>/dev/null; then
     cyan "Removing container: $c"
     docker rm -f "$c"
@@ -82,19 +82,19 @@ done
 
 # Volumes
 cyan "Cleaning up MySQL container and volume…"
-docker rm -f quarkus-mysql  2>/dev/null || true
-docker volume rm quarkus-mysql-data 2>/dev/null || true
+docker rm -f local-quarkus-mysql  2>/dev/null || true
+docker volume rm local-quarkus-mysql-data 2>/dev/null || true
 
-if $FULL_RESET && docker volume inspect quarkus-mysql-data &>/dev/null; then
+if $FULL_RESET && docker volume inspect local-quarkus-mysql-data &>/dev/null; then
   cyan "Removing MySQL data volume and scrubbing TF state"
-  docker volume rm quarkus-mysql-data
+  docker volume rm local-quarkus-mysql-data
   terraform state rm 'module.mysql.docker_volume.mysql_data' || true
 fi
 
 # Network (only on full reset)
-if $FULL_RESET && docker network inspect quarkus_net &>/dev/null; then
-  cyan "Removing network: quarkus_net"
-  docker network rm quarkus_net
+if $FULL_RESET && docker network inspect local_net &>/dev/null; then
+  cyan "Removing network: local_net"
+  docker network rm local_net
 fi
 
 # Image (only on full reset)

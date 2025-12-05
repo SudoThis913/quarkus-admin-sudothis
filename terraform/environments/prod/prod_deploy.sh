@@ -15,6 +15,28 @@ done
 SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 cd "$SCRIPT_DIR" || { echo "Cannot cd to $SCRIPT_DIR"; exit 1; }
 
+# Go to project root to build
+PROJECT_ROOT="$( cd ../../ >/dev/null 2>&1 && pwd )" # Go to quarkus-admin-sudothis directory
+
+# Build the Quarkus app and Docker image
+echo "☕ Building Quarkus App (Uber Jar)..."
+(cd "$PROJECT_ROOT" && ./mvnw package -Dquarkus.package.jar.type=uber-jar -DskipTests)
+
+echo "Whale Building Docker Image (quarkus-admin:prod for ${PLATFORM})..."
+# Ensure buildx is available for cross-compilation if not on arm64
+IMAGE_NAME="quarkus-admin:prod"
+PLATFORM="linux/arm64" # Target Raspberry Pi 4
+
+(cd "$PROJECT_ROOT" && \
+  if [ "$(uname -m)" != "aarch64" ]; then
+      echo "   Detected non-ARM architecture. Using docker buildx..."
+      docker buildx build --platform ${PLATFORM} -f src/main/docker/Dockerfile.jvm -t ${IMAGE_NAME} --load .
+  else
+      docker build -f src/main/docker/Dockerfile.jvm -t ${IMAGE_NAME} .
+  fi
+)
+
+
 echo "Running in $SCRIPT_DIR"
 
 # 2. CLI flags
