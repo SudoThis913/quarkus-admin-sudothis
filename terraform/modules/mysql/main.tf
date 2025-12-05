@@ -43,7 +43,7 @@ resource "docker_container" "mysql" {
 }
 
 resource "docker_container" "flyway_migration" {
-  name  = "flyway-init"
+  name  = "${var.name}-flyway"
   image = "flyway/flyway:10.11"
   depends_on = [docker_container.mysql]
 

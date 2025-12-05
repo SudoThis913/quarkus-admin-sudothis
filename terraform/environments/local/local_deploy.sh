@@ -73,7 +73,7 @@ fi
 cyan "Cleaning up stale Docker containers…"
 
 # Containers that are always removed
-for c in quarkus-mysql quarkus-redis quarkus-admin mailhog flyway-init certbot-sync-run; do
+for c in quarkus-mysql quarkus-redis quarkus-admin mailhog flyway-init quarkus-mysql-flyway certbot-sync-run; do
   if docker container inspect "$c" &>/dev/null; then
     cyan "Removing container: $c"
     docker rm -f "$c"

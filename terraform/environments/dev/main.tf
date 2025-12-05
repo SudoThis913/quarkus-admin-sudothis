@@ -47,6 +47,8 @@ module "quarkus_app" {
   internal_port = 8080
   external_port = 8082
   network_name = docker_network.app_net.name
+  db_host        = "dev-quarkus-mysql"
+  db_port        = 3306
   
   env_vars = {
     QUARKUS_PROFILE = "dev"

@@ -32,7 +32,8 @@ echo "Cleaning up stale Docker containers..."
 
 # Cleanup logic (simplified for dev)
 # Prefixing with dev- ensures we don't kill local/prod containers
-for c in dev-quarkus-mysql dev-quarkus-admin dev-quarkus-redis; do
+# Also cleaning up potential stale flyway-init from previous runs
+for c in dev-quarkus-mysql dev-quarkus-admin dev-quarkus-redis dev-quarkus-mysql-flyway flyway-init; do
   if docker container inspect "$c" &>/dev/null; then
     echo "Removing existing container: $c"
     docker rm -f "$c"
