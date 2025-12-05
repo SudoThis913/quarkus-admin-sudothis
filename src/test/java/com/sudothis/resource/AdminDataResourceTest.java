@@ -10,6 +10,8 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
 
 @QuarkusTest
 public class AdminDataResourceTest {
@@ -83,5 +85,23 @@ public class AdminDataResourceTest {
             .get("/api/admin/data/Organization/" + id)
         .then()
             .statusCode(404);
+            
+        // 7. Test Filtering
+        String orgName2 = "Another Org " + System.currentTimeMillis();
+        String json2 = "{\"name\": \"" + orgName2 + "\", \"active\": true}";
+        given().contentType(ContentType.JSON).body(json2).when().post("/api/admin/data/Organization").then().statusCode(201);
+        
+        String orgName3 = "Something Else " + System.currentTimeMillis();
+        String json3 = "{\"name\": \"" + orgName3 + "\", \"active\": true}";
+        given().contentType(ContentType.JSON).body(json3).when().post("/api/admin/data/Organization").then().statusCode(201);
+        
+        given()
+            .queryParam("name", "Another Org")
+            .when()
+            .get("/api/admin/data/Organization")
+        .then()
+            .statusCode(200)
+            .body("size()", is(1))
+            .body("[0].name", Matchers.containsString("Another Org"));
     }
 }

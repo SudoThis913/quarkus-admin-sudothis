@@ -2,6 +2,7 @@ package com.sudothis.resource;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sudothis.meta.FieldDefinition;
 import com.sudothis.meta.ModelRegistry;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.annotation.security.RolesAllowed;
@@ -9,15 +10,23 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Path("/api/admin/data")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @RolesAllowed("admin")
 public class AdminDataResource {
+
+    private static final Set<String> RESERVED_PARAMS = Set.of("page", "size", "sort");
 
     @Inject
     ModelRegistry registry;
@@ -31,6 +40,7 @@ public class AdminDataResource {
     @GET
     @Path("/{entity}")
     public Response list(@PathParam("entity") String entityName,
+                         @Context UriInfo uriInfo,
                          @QueryParam("page") @DefaultValue("0") int page,
                          @QueryParam("size") @DefaultValue("20") int size,
                          @QueryParam("sort") String sort) {
@@ -44,10 +54,46 @@ public class AdminDataResource {
              return Response.serverError().entity("Entity does not extend PanacheEntityBase").build();
         }
 
-        // Dynamic Querying using standard JPA to avoid static generic issues with Panache
+        // --- Build Query ---
+        StringBuilder queryBuilder = new StringBuilder("SELECT e FROM " + entityClass.getSimpleName() + " e");
+        Map<String, List<String>> queryParams = uriInfo.getQueryParameters();
+        Map<String, Object> params = new HashMap<>();
+
+        // Filtering
+        List<String> whereClauses = queryParams.entrySet().stream()
+                .filter(entry -> !RESERVED_PARAMS.contains(entry.getKey()))
+                .map(entry -> {
+                    String paramName = entry.getKey();
+                    String paramValue = entry.getValue().get(0); // Take first value for now
+
+                    FieldDefinition fieldDef = registry.getDefinition(entityName).fields().stream()
+                            .filter(f -> f.name().equals(paramName))
+                            .findFirst().orElse(null);
+
+                    if (fieldDef != null) {
+                        // Basic type checking for filtering
+                        if (fieldDef.type().equals("String")) {
+                            params.put(paramName, "%" + paramValue + "%");
+                            return "e." + paramName + " LIKE :" + paramName;
+                        } else {
+                            // Try to convert to appropriate type if possible
+                            // For simplicity, for non-string, assume exact match
+                            params.put(paramName, paramValue);
+                            return "e." + paramName + " = :" + paramName;
+                        }
+                    }
+                    return null; // Ignore unknown fields for filtering
+                })
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
+
+        if (!whereClauses.isEmpty()) {
+            queryBuilder.append(" WHERE ").append(String.join(" AND ", whereClauses));
+        }
+
+        // Sorting
         String sortField = "id";
         String sortOrder = "ASC";
-        
         if (sort != null && !sort.isBlank()) {
             if (sort.startsWith("-")) {
                 sortField = sort.substring(1);
@@ -57,15 +103,43 @@ public class AdminDataResource {
                 sortOrder = "ASC";
             }
         }
-
         // Basic prevention of SQL Injection on sortField (simple regex)
         if (!sortField.matches("^[a-zA-Z0-9_.]+$")) {
             sortField = "id";
         }
-
-        String qlString = "SELECT e FROM " + entityClass.getSimpleName() + " e ORDER BY e." + sortField + " " + sortOrder;
+        queryBuilder.append(" ORDER BY e.").append(sortField).append(" ").append(sortOrder);
         
-        List<?> results = em.createQuery(qlString)
+        // Execute Query
+        jakarta.persistence.Query query = em.createQuery(queryBuilder.toString());
+        params.forEach((key, value) -> {
+            // Need to convert value type for non-strings for JPQL parameters
+            FieldDefinition fieldDef = registry.getDefinition(entityName).fields().stream()
+                    .filter(f -> f.name().equals(key))
+                    .findFirst().orElse(null);
+            
+            if (fieldDef != null) {
+                 try {
+                    Object convertedValue = value;
+                    if (fieldDef.type().equals("Long")) {
+                        convertedValue = Long.valueOf((String)value);
+                    } else if (fieldDef.type().equals("Integer")) {
+                        convertedValue = Integer.valueOf((String)value);
+                    } else if (fieldDef.type().equals("Boolean")) {
+                        convertedValue = Boolean.valueOf((String)value);
+                    }
+                    // Add more types as needed
+                    query.setParameter(key, convertedValue);
+
+                 } catch (NumberFormatException e) {
+                     // Log error, or just let it pass if type mismatch is expected to fail query.
+                     // For MVP, if conversion fails, the query might throw an exception later.
+                 }
+            } else {
+                query.setParameter(key, value); // Fallback for unknown fields (shouldn't happen with filtering)
+            }
+        });
+
+        List<?> results = query
                 .setFirstResult(page * size)
                 .setMaxResults(size)
                 .getResultList();
