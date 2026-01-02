@@ -72,6 +72,7 @@ public class ModelRegistry {
                 attr.isCollection(),
                 reference 
             ));
+            LOG.infof("Field: %s, Type: %s, Reference: %s", attr.getName(), attr.getJavaType().getSimpleName(), reference);
         }
 
         EntityDefinition def = new EntityDefinition(

@@ -41,35 +41,6 @@
         <a href="/admin" class="btn btn-primary btn-lg">Go to Admin Panel</a>
     </div>
 
-    <div class="console-output">
-        <pre id="consoleLog"></pre>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const consoleLog = document.getElementById('consoleLog');
-            
-            // Expected Site Name
-            consoleLog.innerHTML += `System: SudoThis Admin\n`;
-            consoleLog.innerHTML += `Environment: ${window.location.hostname === 'localhost' ? 'Development' : 'Production'}\n`;
-
-            // Server Uptime (Requires a backend endpoint)
-            // For now, client-side approximate uptime
-            const startTime = new Date();
-            function updateUptime() {
-                const now = new Date();
-                const diff = now.getTime() - startTime.getTime();
-                const seconds = Math.floor(diff / 1000);
-                const minutes = Math.floor(seconds / 60);
-                const hours = Math.floor(minutes / 60);
-                const days = Math.floor(hours / 24);
-
-                const uptimeStr = `${days}d ${hours % 24}h ${minutes % 60}m ${seconds % 60}s`;
-                consoleLog.innerHTML = `System: SudoThis Admin\nEnvironment: ${window.location.hostname === 'localhost' ? 'Development' : 'Production'}\nClient Uptime: ${uptimeStr}`;
-            }
-            setInterval(updateUptime, 1000);
-        });
-    </script>
+    
 </body>
 </html>

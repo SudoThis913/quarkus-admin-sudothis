@@ -73,7 +73,7 @@ fi
 cyan "Cleaning up stale Docker containers…"
 
 # Containers that are always removed
-for c in local-quarkus-mysql local-quarkus-admin local-quarkus-redis local-mailhog local-quarkus-mysql-flyway; do
+for c in local-quarkus-mysql local-quarkus-admin local-quarkus-redis local-mailhog local-quarkus-mysql-flyway local-keycloak; do
   if docker container inspect "$c" &>/dev/null; then
     cyan "Removing container: $c"
     docker rm -f "$c"

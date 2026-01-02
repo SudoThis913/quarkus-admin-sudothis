@@ -12,7 +12,7 @@ import java.util.Set;
 @Table(name = "ORGANIZATION")
 @EntityListeners(AuditListener.class)
 @AdminResource(displayName = "Organizations")
-public class Organization extends PanacheEntity {
+public class Organization extends PanacheEntity implements TenantAware {
 
     @Column(nullable = false, unique = true)
     public String name;
@@ -20,10 +20,21 @@ public class Organization extends PanacheEntity {
     public boolean active = true;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "organization", cascade = CascadeType.ALL, orphanRemoval = true)
-    public Set<Team> teams = new HashSet<>();
+    @OneToMany(mappedBy = "organization", cascade = CascadeType.ALL)
+    public Set<Company> companies = new HashSet<>();
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "organization")
-    public Set<AppUser> users = new HashSet<>();
+    @Override
+    public Long getOrganizationId() {
+        return id;
+    }
+
+    @Override
+    public Long getCompanyId() {
+        return null;
+    }
+
+    @Override
+    public Long getTeamId() {
+        return null;
+    }
 }

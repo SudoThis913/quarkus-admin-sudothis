@@ -55,12 +55,13 @@ module "quarkus_app" {
   internal_port  = 8080
   external_port  = 8081
   network_name   = docker_network.app_net.name
-  db_host        = "prod-quarkus-mysql"
+  db_host        = "prod-quarkus-mysql" # Default name in prod for the service
   db_port        = 3306
+  mysql_ca_cert_path = module.mysql.mysql_ca_cert_path
 
   env_vars = {
     QUARKUS_PROFILE                          = "prod"
-    QUARKUS_DATASOURCE_JDBC_URL              = "jdbc:mysql://prod-quarkus-mysql:3306/quarkusdb"
+    QUARKUS_DATASOURCE_JDBC_URL              = "jdbc:mysql://prod-quarkus-mysql:3306/quarkusdb" # This will be overridden by module, but kept for clarity
     QUARKUS_DATASOURCE_USERNAME              = var.db_user
     QUARKUS_DATASOURCE_PASSWORD              = var.db_password
     QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION = "update"

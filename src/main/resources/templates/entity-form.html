@@ -1,0 +1,25 @@
+<div id="entity-form-view">
+    <h3>{#if entityData}Edit{else}Create{/if} {entityDefinition.displayName}</h3>
+
+    <form hx-post="{#if entityData}/api/admin/data/{entityName}/{entityData.id}{else}/api/admin/data/{entityName}{/if}"
+          hx-put="{#if entityData}/api/admin/data/{entityName}/{entityData.id}{/if}"
+          hx-target="#main-content"
+          hx-swap="outerHTML">
+        {#for field in entityDefinition.fields}
+        {#if field.name != "id" && field.name != "createdAt"}
+        <div class="mb-3">
+            <label for="{field.name}" class="form-label">{field.name}</label>
+            {#if field.reference}
+            <input type="number" class="form-control" id="{field.name}" name="{field.name}" value="{#if entityData}{entityData.get(field.name).id}{/if}" {#if field.required}required{/if}>
+            <small class="form-text text-muted">Enter ID of related {field.reference}</small>
+            {#else}
+            <input type="{#if field.type == 'Long' || field.type == 'Integer'}number{#else}text{/if}" 
+                   class="form-control" id="{field.name}" name="{field.name}" value="{#if entityData}{entityData.get(field.name)}{/if}" {#if field.required}required{/if}>
+            {/if}
+        </div>
+        {/if}
+        {/for}
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn-secondary" hx-get="/admin/{entityName}" hx-target="#main-content" hx-swap="outerHTML">Cancel</button>
+    </form>
+</div>

@@ -23,7 +23,7 @@ import java.util.Set;
 @Table(name = "APP_USER")
 @EntityListeners(AuditListener.class)
 @AdminResource(displayName = "Users")
-public class AppUser extends PanacheEntity {
+public class AppUser extends PanacheEntity implements TenantAware {
 
     /** Copied from Keycloak's {@code preferred_username} claim for convenience. */
     @Column(name = "USERNAME", nullable = false)
@@ -48,6 +48,17 @@ public class AppUser extends PanacheEntity {
     @JoinColumn(name = "org_id")
     public Organization organization;
 
+    // Using Set for ManyToMany to support Multi-Tenancy
+    
+    @JsonIgnore
+    @ManyToMany
+    @JoinTable(
+        name = "USER_COMPANY",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "company_id")
+    )
+    public Set<Company> companies = new HashSet<>();
+
     @JsonIgnore
     @ManyToMany
     @JoinTable(
@@ -56,6 +67,17 @@ public class AppUser extends PanacheEntity {
         inverseJoinColumns = @JoinColumn(name = "team_id")
     )
     public Set<Team> teams = new HashSet<>();
+    
+    public boolean isEmployee; // Flag to enforce single-org constraints if true
+
+    @Override
+    public Long getOrganizationId() { return null; } // Ambiguous for User
+
+    @Override
+    public Long getCompanyId() { return null; }
+
+    @Override
+    public Long getTeamId() { return null; }
 
     // ---------------------------------------------------------------------
     // Factory helpers

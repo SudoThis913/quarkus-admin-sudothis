@@ -16,7 +16,7 @@ public class RootResource {
 
     @GET
     @Produces(MediaType.TEXT_HTML)
-    public TemplateInstance getIndex() {
-        return index.instance();
+    public String getIndex() { // Change return type to String
+        return index.instance().render(); // Explicitly render
     }
 }

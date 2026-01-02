@@ -29,4 +29,5 @@ resource "docker_container" "redis" {
   command = var.password != "" ? ["redis-server", "--requirepass", var.password] : null
 
   restart = "unless-stopped"
+
 }

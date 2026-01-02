@@ -12,16 +12,31 @@ import java.util.Set;
 @Table(name = "TEAM")
 @EntityListeners(AuditListener.class)
 @AdminResource(displayName = "Teams")
-public class Team extends PanacheEntity {
+public class Team extends PanacheEntity implements TenantAware {
 
     @Column(nullable = false)
     public String name;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "org_id", nullable = false)
-    public Organization organization;
+    @JoinColumn(name = "company_id", nullable = false)
+    public Company company;
 
     @JsonIgnore
     @ManyToMany(mappedBy = "teams")
     public Set<AppUser> members = new HashSet<>();
+
+    @Override
+    public Long getOrganizationId() {
+        return company.organization != null ? company.organization.id : null;
+    }
+
+    @Override
+    public Long getCompanyId() {
+        return company.id;
+    }
+
+    @Override
+    public Long getTeamId() {
+        return id;
+    }
 }
