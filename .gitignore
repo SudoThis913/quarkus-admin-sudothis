@@ -77,3 +77,5 @@ dev-keystore.p12
 dev_pkcs1.key
 # Contains sensitive dev keys/certs
 src/main/resources/conf/
+# Generated per-deploy by deploy-pi.sh
+deploy/keycloak-realm-pi.json

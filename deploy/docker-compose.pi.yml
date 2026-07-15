@@ -79,6 +79,8 @@ services:
     image: ${APP_IMAGE:-quarkus-admin:prod}
     container_name: sudothis-admin
     restart: unless-stopped
+    # Image entrypoint is wait-for-mysql.sh and requires "host:port -- launcher" args
+    command: ["mysql:3306", "--", "/opt/jboss/container/java/run/run-java.sh"]
     depends_on:
       mysql:
         condition: service_healthy
@@ -91,7 +93,8 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       # Must be the browser-reachable URL; the container reaches it via NAT hairpin
       OIDC_AUTH_SERVER_URL: http://${PI_HOST}:8180/realms/sudothis
-      JAVA_OPTS_APPEND: "-Xms48m -Xmx192m -XX:MaxMetaspaceSize=128m"
+      # This env override replaces the one baked into the image — keep its flags
+      JAVA_OPTS_APPEND: "-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager -Xms48m -Xmx192m -XX:MaxMetaspaceSize=128m"
     ports:
       - "8081:8081"
     networks: [sudothis_net]

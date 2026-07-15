@@ -18,11 +18,15 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 SKIP_TESTS=false
 SKIP_BUILD=false
+SKIP_MVN=false
 APP_ONLY=false
 for arg in "$@"; do
   case "$arg" in
     --skip-tests) SKIP_TESTS=true ;;
     --skip-build) SKIP_BUILD=true ;;
+    # jar already built (e.g. on the Windows side where the .m2 cache lives);
+    # still builds and ships the docker image
+    --skip-mvn)   SKIP_MVN=true ;;
     --app-only)   APP_ONLY=true ;;
     *) echo "Unknown flag: $arg" >&2; exit 2 ;;
   esac
@@ -38,12 +42,17 @@ IMAGE="quarkus-admin:$TAG"
 cd "$PROJECT_ROOT"
 
 if ! $SKIP_BUILD; then
-  if ! $SKIP_TESTS; then
-    echo "==> Running test suite (gate)"
-    ./mvnw -q test
+  if $SKIP_MVN; then
+    [ -d target/quarkus-app ] || { echo "--skip-mvn but target/quarkus-app missing" >&2; exit 1; }
+    echo "==> Using existing fast-jar build"
+  else
+    if ! $SKIP_TESTS; then
+      echo "==> Running test suite (gate)"
+      ./mvnw -q test
+    fi
+    echo "==> Packaging (fast-jar)"
+    ./mvnw -q package -DskipTests
   fi
-  echo "==> Packaging (fast-jar)"
-  ./mvnw -q package -DskipTests
   echo "==> Building arm64 image $IMAGE"
   docker buildx build --platform linux/arm64 \
     -f src/main/docker/Dockerfile.jvm \
