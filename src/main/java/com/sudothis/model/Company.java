@@ -12,6 +12,9 @@ import java.util.Set;
 @Table(name = "COMPANY")
 @EntityListeners(AuditListener.class)
 @AdminResource(displayName = "Companies")
+// Batches lazy proxy initialization so TenantAware traversal in list results
+// (e.g. Team.getOrganizationId() → company.organization) doesn't go 1-query-per-row
+@org.hibernate.annotations.BatchSize(size = 50)
 public class Company extends PanacheEntity implements TenantAware {
 
     @Column(nullable = false)
@@ -45,4 +48,7 @@ public class Company extends PanacheEntity implements TenantAware {
     public Long getTeamId() {
         return null;
     }
+
+    @Override public String jpqlOrganizationIdPath() { return "organization.id"; }
+    @Override public String jpqlCompanyIdPath()      { return "id"; }
 }

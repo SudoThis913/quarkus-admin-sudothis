@@ -6,11 +6,11 @@ last "terraform apply" which may have affected this plan:
 
 [1m  # module.quarkus_app.docker_container.quarkus[0m has been deleted
 [0m  [31m-[0m[0m resource "docker_container" "quarkus" {
-      [31m-[0m[0m id                                          = "67071e977a753a5e78373970d45fbd3cc20b6c13ea4b90ce5ccf21d8cee00094" [90m-> null[0m[0m
-        name                                        = "quarkus-admin"
+      [31m-[0m[0m id                                          = "f93b950dda8b1d7c197c1900409082dc018f8a90e837c2c6820eb111ada33159" [90m-> null[0m[0m
+        name                                        = "local-quarkus-admin"
         [90m# (41 unchanged attributes hidden)[0m[0m
 
-        [90m# (2 unchanged blocks hidden)[0m[0m
+        [90m# (5 unchanged blocks hidden)[0m[0m
     }
 
 
@@ -23,39 +23,39 @@ actions to undo or respond to these changes.
 Terraform used the selected providers to generate the following execution
 plan. Resource actions are indicated with the following symbols:
   [32m+[0m create[0m
+[31m-[0m/[32m+[0m destroy and then create replacement[0m
 
 Terraform will perform the following actions:
 
-[1m  # docker_container.certbot_sync_run[0m will be created
-[0m  [32m+[0m[0m resource "docker_container" "certbot_sync_run" {
-      [32m+[0m[0m attach                                      = true
+[1m  # module.keycloak.docker_container.keycloak[0m will be created
+[0m  [32m+[0m[0m resource "docker_container" "keycloak" {
+      [32m+[0m[0m attach                                      = false
       [32m+[0m[0m bridge                                      = (known after apply)
-      [32m+[0m[0m command                                     = (known after apply)
+      [32m+[0m[0m command                                     = [
+          [32m+[0m[0m "/usr/local/bin/wait-for-it.sh local-quarkus-mysql:3306 -- /opt/keycloak/bin/kc.sh start-dev --import-realm",
+        ]
       [32m+[0m[0m container_logs                              = (known after apply)
       [32m+[0m[0m container_read_refresh_timeout_milliseconds = 15000
-      [32m+[0m[0m entrypoint                                  = (known after apply)
-      [32m+[0m[0m env                                         = [
-          [32m+[0m[0m "DNS_PROVIDER=cloudflare",
-          [32m+[0m[0m "DOMAIN=yourdomain.com",
-          [32m+[0m[0m "DRY_RUN=false",
-          [32m+[0m[0m "EMAIL=example@example.com",
-          [32m+[0m[0m "MODE=local",
+      [32m+[0m[0m entrypoint                                  = [
+          [32m+[0m[0m "/bin/bash",
+          [32m+[0m[0m "-c",
         ]
+      [32m+[0m[0m env                                         = (sensitive value)
       [32m+[0m[0m exit_code                                   = (known after apply)
       [32m+[0m[0m hostname                                    = (known after apply)
       [32m+[0m[0m id                                          = (known after apply)
-      [32m+[0m[0m image                                       = "certbot-sync-run"
+      [32m+[0m[0m image                                       = "quay.io/keycloak/keycloak:latest"
       [32m+[0m[0m init                                        = (known after apply)
       [32m+[0m[0m ipc_mode                                    = (known after apply)
       [32m+[0m[0m log_driver                                  = (known after apply)
-      [32m+[0m[0m logs                                        = true
-      [32m+[0m[0m must_run                                    = false
-      [32m+[0m[0m name                                        = "certbot-sync-run"
+      [32m+[0m[0m logs                                        = false
+      [32m+[0m[0m must_run                                    = true
+      [32m+[0m[0m name                                        = "local-keycloak"
       [32m+[0m[0m network_data                                = (known after apply)
-      [32m+[0m[0m network_mode                                = "quarkus_net"
+      [32m+[0m[0m network_mode                                = "bridge"
       [32m+[0m[0m read_only                                   = false
       [32m+[0m[0m remove_volumes                              = true
-      [32m+[0m[0m restart                                     = "no"
+      [32m+[0m[0m restart                                     = "unless-stopped"
       [32m+[0m[0m rm                                          = false
       [32m+[0m[0m runtime                                     = (known after apply)
       [32m+[0m[0m security_opts                               = (known after apply)
@@ -72,25 +72,30 @@ Terraform will perform the following actions:
 
       [32m+[0m[0m labels (known after apply)
 
-      [32m+[0m[0m volumes {
-          [32m+[0m[0m container_path = "/etc/letsencrypt"
-          [32m+[0m[0m host_path      = "/etc/letsencrypt"
+      [32m+[0m[0m networks_advanced {
+          [32m+[0m[0m aliases      = [
+              [32m+[0m[0m "local-keycloak",
+            ]
+          [32m+[0m[0m name         = "local_net"
             [90m# (2 unchanged attributes hidden)[0m[0m
         }
-      [32m+[0m[0m volumes {
-          [32m+[0m[0m container_path = "/mnt/certsync"
-          [32m+[0m[0m host_path      = "/mnt/d/Quarkus_Admin/quarkus-admin-sudothis/terraform/environments/local/secrets/certsync"
-            [90m# (2 unchanged attributes hidden)[0m[0m
+
+      [32m+[0m[0m ports {
+          [32m+[0m[0m external = 8180
+          [32m+[0m[0m internal = 8080
+          [32m+[0m[0m ip       = "0.0.0.0"
+          [32m+[0m[0m protocol = "tcp"
         }
+
       [32m+[0m[0m volumes {
-          [32m+[0m[0m container_path = "/mnt/hosts.txt"
-          [32m+[0m[0m host_path      = "/mnt/d/Quarkus_Admin/quarkus-admin-sudothis/terraform/environments/local/secrets/hosts.txt"
+          [32m+[0m[0m container_path = "/opt/keycloak/data/import/realm.json"
+          [32m+[0m[0m host_path      = "/mnt/d/Quarkus_Admin/quarkus-admin-sudothis/terraform/src/main/resources/keycloak-realm.json"
           [32m+[0m[0m read_only      = true
             [90m# (2 unchanged attributes hidden)[0m[0m
         }
       [32m+[0m[0m volumes {
-          [32m+[0m[0m container_path = "/secrets/cloudflare.ini"
-          [32m+[0m[0m host_path      = "/mnt/d/Quarkus_Admin/quarkus-admin-sudothis/terraform/environments/local/secrets/cloudflare.ini"
+          [32m+[0m[0m container_path = "/usr/local/bin/wait-for-it.sh"
+          [32m+[0m[0m host_path      = "/mnt/d/Quarkus_Admin/quarkus-admin-sudothis/wait-for-mysql.sh"
           [32m+[0m[0m read_only      = true
             [90m# (2 unchanged attributes hidden)[0m[0m
         }
@@ -114,7 +119,7 @@ Terraform will perform the following actions:
       [32m+[0m[0m log_driver                                  = (known after apply)
       [32m+[0m[0m logs                                        = false
       [32m+[0m[0m must_run                                    = true
-      [32m+[0m[0m name                                        = "mailhog"
+      [32m+[0m[0m name                                        = "local-mailhog"
       [32m+[0m[0m network_data                                = (known after apply)
       [32m+[0m[0m network_mode                                = "bridge"
       [32m+[0m[0m read_only                                   = false
@@ -145,7 +150,7 @@ Terraform will perform the following actions:
 
       [32m+[0m[0m networks_advanced {
           [32m+[0m[0m aliases      = []
-          [32m+[0m[0m name         = "quarkus_net"
+          [32m+[0m[0m name         = "local_net"
             [90m# (2 unchanged attributes hidden)[0m[0m
         }
 
@@ -186,15 +191,7 @@ Terraform will perform the following actions:
           [32m+[0m[0m "sh",
           [32m+[0m[0m "-c",
         ]
-      [32m+[0m[0m env                                         = [
-          [32m+[0m[0m "FLYWAY_CLEAN_DISABLED=false",
-          [32m+[0m[0m "FLYWAY_CONNECT_RETRIES=10",
-          [32m+[0m[0m "FLYWAY_CONNECT_RETRIES_INTERVAL=3",
-          [32m+[0m[0m "FLYWAY_LOCATIONS=filesystem:/flyway/sql",
-          [32m+[0m[0m "FLYWAY_PASSWORD=admin123",
-          [32m+[0m[0m "FLYWAY_URL=jdbc:mysql://quarkus-mysql:3306/quarkusdb",
-          [32m+[0m[0m "FLYWAY_USER=admin",
-        ]
+      [32m+[0m[0m env                                         = (sensitive value)
       [32m+[0m[0m exit_code                                   = (known after apply)
       [32m+[0m[0m hostname                                    = (known after apply)
       [32m+[0m[0m id                                          = (known after apply)
@@ -204,7 +201,7 @@ Terraform will perform the following actions:
       [32m+[0m[0m log_driver                                  = (known after apply)
       [32m+[0m[0m logs                                        = false
       [32m+[0m[0m must_run                                    = true
-      [32m+[0m[0m name                                        = "flyway-init"
+      [32m+[0m[0m name                                        = "local-quarkus-mysql-flyway"
       [32m+[0m[0m network_data                                = (known after apply)
       [32m+[0m[0m network_mode                                = "bridge"
       [32m+[0m[0m read_only                                   = false
@@ -228,10 +225,16 @@ Terraform will perform the following actions:
 
       [32m+[0m[0m networks_advanced {
           [32m+[0m[0m aliases      = []
-          [32m+[0m[0m name         = "quarkus_net"
+          [32m+[0m[0m name         = "local_net"
             [90m# (2 unchanged attributes hidden)[0m[0m
         }
 
+      [32m+[0m[0m volumes {
+          [32m+[0m[0m container_path = "/certs/ca.pem"
+          [32m+[0m[0m host_path      = "/mnt/d/Quarkus_Admin/quarkus-admin-sudothis/terraform/modules/mysql/certs/ca.pem"
+          [32m+[0m[0m read_only      = true
+            [90m# (2 unchanged attributes hidden)[0m[0m
+        }
       [32m+[0m[0m volumes {
           [32m+[0m[0m container_path = "/flyway/sql"
           [32m+[0m[0m host_path      = "/mnt/d/Quarkus_Admin/quarkus-admin-sudothis/terraform/modules/mysql/flyway/sql"
@@ -243,16 +246,14 @@ Terraform will perform the following actions:
 [0m  [32m+[0m[0m resource "docker_container" "mysql" {
       [32m+[0m[0m attach                                      = false
       [32m+[0m[0m bridge                                      = (known after apply)
-      [32m+[0m[0m command                                     = (known after apply)
+      [32m+[0m[0m command                                     = [
+          [32m+[0m[0m "mysqld",
+          [32m+[0m[0m "--mysql-native-password=ON",
+        ]
       [32m+[0m[0m container_logs                              = (known after apply)
       [32m+[0m[0m container_read_refresh_timeout_milliseconds = 15000
       [32m+[0m[0m entrypoint                                  = (known after apply)
-      [32m+[0m[0m env                                         = [
-          [32m+[0m[0m "MYSQL_DATABASE=quarkusdb",
-          [32m+[0m[0m "MYSQL_PASSWORD=admin123",
-          [32m+[0m[0m "MYSQL_ROOT_PASSWORD=admin123",
-          [32m+[0m[0m "MYSQL_USER=admin",
-        ]
+      [32m+[0m[0m env                                         = (sensitive value)
       [32m+[0m[0m exit_code                                   = (known after apply)
       [32m+[0m[0m hostname                                    = (known after apply)
       [32m+[0m[0m id                                          = (known after apply)
@@ -262,7 +263,7 @@ Terraform will perform the following actions:
       [32m+[0m[0m log_driver                                  = (known after apply)
       [32m+[0m[0m logs                                        = false
       [32m+[0m[0m must_run                                    = true
-      [32m+[0m[0m name                                        = "quarkus-mysql"
+      [32m+[0m[0m name                                        = "local-quarkus-mysql"
       [32m+[0m[0m network_data                                = (known after apply)
       [32m+[0m[0m network_mode                                = "bridge"
       [32m+[0m[0m read_only                                   = false
@@ -284,7 +285,7 @@ Terraform will perform the following actions:
           [32m+[0m[0m interval       = "10s"
           [32m+[0m[0m retries        = 5
           [32m+[0m[0m start_interval = "0s"
-          [32m+[0m[0m start_period   = "5s"
+          [32m+[0m[0m start_period   = "30s"
           [32m+[0m[0m test           = [
               [32m+[0m[0m "CMD",
               [32m+[0m[0m "mysqladmin",
@@ -299,7 +300,7 @@ Terraform will perform the following actions:
 
       [32m+[0m[0m networks_advanced {
           [32m+[0m[0m aliases      = []
-          [32m+[0m[0m name         = "quarkus_net"
+          [32m+[0m[0m name         = "local_net"
             [90m# (2 unchanged attributes hidden)[0m[0m
         }
 
@@ -309,25 +310,56 @@ Terraform will perform the following actions:
           [32m+[0m[0m ip       = "0.0.0.0"
           [32m+[0m[0m protocol = "tcp"
         }
+
+      [32m+[0m[0m volumes {
+          [32m+[0m[0m container_path = "/certs/ca.pem"
+          [32m+[0m[0m host_path      = "/mnt/d/Quarkus_Admin/quarkus-admin-sudothis/terraform/modules/mysql/certs/ca.pem"
+          [32m+[0m[0m read_only      = true
+            [90m# (2 unchanged attributes hidden)[0m[0m
+        }
+      [32m+[0m[0m volumes {
+          [32m+[0m[0m container_path = "/certs/server.key"
+          [32m+[0m[0m host_path      = "/mnt/d/Quarkus_Admin/quarkus-admin-sudothis/terraform/modules/mysql/certs/server.key"
+          [32m+[0m[0m read_only      = true
+            [90m# (2 unchanged attributes hidden)[0m[0m
+        }
+      [32m+[0m[0m volumes {
+          [32m+[0m[0m container_path = "/certs/server.pem"
+          [32m+[0m[0m host_path      = "/mnt/d/Quarkus_Admin/quarkus-admin-sudothis/terraform/modules/mysql/certs/server.pem"
+          [32m+[0m[0m read_only      = true
+            [90m# (2 unchanged attributes hidden)[0m[0m
+        }
+      [32m+[0m[0m volumes {
+          [32m+[0m[0m container_path = "/docker-entrypoint-initdb.d"
+          [32m+[0m[0m host_path      = "/mnt/d/Quarkus_Admin/quarkus-admin-sudothis/terraform/modules/mysql/init"
+          [32m+[0m[0m read_only      = true
+            [90m# (2 unchanged attributes hidden)[0m[0m
+        }
+    }
+
+[1m  # module.mysql.null_resource.certs_dir[0m must be [1m[31mreplaced[0m
+[0m[31m-[0m/[32m+[0m[0m resource "null_resource" "certs_dir" {
+      [33m~[0m[0m id       = "2008265044494020494" -> (known after apply)
+      [33m~[0m[0m triggers = { [31m# forces replacement[0m[0m
+          [33m~[0m[0m "always_run" = "2025-12-09T22:59:56Z" -> (known after apply)
+        }
     }
 
 [1m  # module.quarkus_app.docker_container.quarkus[0m will be created
 [0m  [32m+[0m[0m resource "docker_container" "quarkus" {
       [32m+[0m[0m attach                                      = false
       [32m+[0m[0m bridge                                      = (known after apply)
-      [32m+[0m[0m command                                     = (known after apply)
+      [32m+[0m[0m command                                     = [
+          [32m+[0m[0m "local-quarkus-mysql:3306",
+          [32m+[0m[0m "--",
+          [32m+[0m[0m "/opt/jboss/container/java/run/run-java.sh",
+        ]
       [32m+[0m[0m container_logs                              = (known after apply)
       [32m+[0m[0m container_read_refresh_timeout_milliseconds = 15000
-      [32m+[0m[0m entrypoint                                  = (known after apply)
-      [32m+[0m[0m env                                         = [
-          [32m+[0m[0m "QUARKUS_DATASOURCE_JDBC_URL=jdbc:mysql://quarkus-mysql:3306/quarkusdb",
-          [32m+[0m[0m "QUARKUS_DATASOURCE_PASSWORD=admin123",
-          [32m+[0m[0m "QUARKUS_DATASOURCE_USERNAME=admin",
-          [32m+[0m[0m "QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION=update",
-          [32m+[0m[0m "QUARKUS_PROFILE=dev",
-          [32m+[0m[0m "SMTP_HOST=mailhog",
-          [32m+[0m[0m "SMTP_PORT=1025",
+      [32m+[0m[0m entrypoint                                  = [
+          [32m+[0m[0m "/app_scripts/wait-for-mysql.sh",
         ]
+      [32m+[0m[0m env                                         = (sensitive value)
       [32m+[0m[0m exit_code                                   = (known after apply)
       [32m+[0m[0m hostname                                    = (known after apply)
       [32m+[0m[0m id                                          = (known after apply)
@@ -337,7 +369,7 @@ Terraform will perform the following actions:
       [32m+[0m[0m log_driver                                  = (known after apply)
       [32m+[0m[0m logs                                        = false
       [32m+[0m[0m must_run                                    = true
-      [32m+[0m[0m name                                        = "quarkus-admin"
+      [32m+[0m[0m name                                        = "local-quarkus-admin"
       [32m+[0m[0m network_data                                = (known after apply)
       [32m+[0m[0m network_mode                                = "bridge"
       [32m+[0m[0m read_only                                   = false
@@ -361,7 +393,7 @@ Terraform will perform the following actions:
 
       [32m+[0m[0m networks_advanced {
           [32m+[0m[0m aliases      = []
-          [32m+[0m[0m name         = "quarkus_net"
+          [32m+[0m[0m name         = "local_net"
             [90m# (2 unchanged attributes hidden)[0m[0m
         }
 
@@ -371,23 +403,36 @@ Terraform will perform the following actions:
           [32m+[0m[0m ip       = "0.0.0.0"
           [32m+[0m[0m protocol = "tcp"
         }
+
+      [32m+[0m[0m volumes {
+          [32m+[0m[0m container_path = "/app_scripts"
+          [32m+[0m[0m host_path      = "/mnt/d/Quarkus_Admin/quarkus-admin-sudothis"
+          [32m+[0m[0m read_only      = true
+            [90m# (2 unchanged attributes hidden)[0m[0m
+        }
+      [32m+[0m[0m volumes {
+          [32m+[0m[0m container_path = "/certs/ca.pem"
+          [32m+[0m[0m host_path      = "/mnt/d/Quarkus_Admin/quarkus-admin-sudothis/terraform/modules/mysql/certs/ca.pem"
+          [32m+[0m[0m read_only      = true
+            [90m# (2 unchanged attributes hidden)[0m[0m
+        }
+      [32m+[0m[0m volumes {
+          [32m+[0m[0m container_path = "/deployments/dev-keystore.p12"
+          [32m+[0m[0m host_path      = "/mnt/d/Quarkus_Admin/quarkus-admin-sudothis/dev-keystore.p12"
+          [32m+[0m[0m read_only      = true
+            [90m# (2 unchanged attributes hidden)[0m[0m
+        }
     }
 
 [1m  # module.redis.docker_container.redis[0m will be created
 [0m  [32m+[0m[0m resource "docker_container" "redis" {
       [32m+[0m[0m attach                                      = false
       [32m+[0m[0m bridge                                      = (known after apply)
-      [32m+[0m[0m command                                     = [
-          [32m+[0m[0m "redis-server",
-          [32m+[0m[0m "--requirepass",
-          [32m+[0m[0m "letmein",
-        ]
+      [32m+[0m[0m command                                     = (sensitive value)
       [32m+[0m[0m container_logs                              = (known after apply)
       [32m+[0m[0m container_read_refresh_timeout_milliseconds = 15000
       [32m+[0m[0m entrypoint                                  = (known after apply)
-      [32m+[0m[0m env                                         = [
-          [32m+[0m[0m "REDIS_PASSWORD=letmein",
-        ]
+      [32m+[0m[0m env                                         = (sensitive value)
       [32m+[0m[0m exit_code                                   = (known after apply)
       [32m+[0m[0m hostname                                    = (known after apply)
       [32m+[0m[0m id                                          = (known after apply)
@@ -397,7 +442,7 @@ Terraform will perform the following actions:
       [32m+[0m[0m log_driver                                  = (known after apply)
       [32m+[0m[0m logs                                        = false
       [32m+[0m[0m must_run                                    = true
-      [32m+[0m[0m name                                        = "quarkus-redis"
+      [32m+[0m[0m name                                        = "local-quarkus-redis"
       [32m+[0m[0m network_data                                = (known after apply)
       [32m+[0m[0m network_mode                                = "bridge"
       [32m+[0m[0m read_only                                   = false
@@ -421,7 +466,7 @@ Terraform will perform the following actions:
 
       [32m+[0m[0m networks_advanced {
           [32m+[0m[0m aliases      = []
-          [32m+[0m[0m name         = "quarkus_net"
+          [32m+[0m[0m name         = "local_net"
             [90m# (2 unchanged attributes hidden)[0m[0m
         }
 
@@ -433,5 +478,4 @@ Terraform will perform the following actions:
         }
     }
 
-[1mPlan:[0m 6 to add, 0 to change, 0 to destroy.
-[0m
+[1mPlan:[0m [0m7 to add, 0 to change, 1 to destroy.

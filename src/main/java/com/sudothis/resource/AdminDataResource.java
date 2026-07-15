@@ -3,9 +3,12 @@ package com.sudothis.resource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.sudothis.meta.DtoProjector;
 import com.sudothis.meta.EntityDefinition;
 import com.sudothis.meta.FieldDefinition;
 import com.sudothis.meta.ModelRegistry;
+import com.sudothis.model.AppUser;
+import com.sudothis.security.FilterResult;
 import com.sudothis.security.PermissionService;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -13,6 +16,8 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
@@ -50,6 +55,9 @@ public class AdminDataResource {
     @Inject
     SecurityIdentity identity;
 
+    @Inject
+    Validator validator;
+
     @GET
     @Path("/{entity}")
     public Response list(@PathParam("entity") String entityName,
@@ -67,6 +75,10 @@ public class AdminDataResource {
              return Response.serverError().entity("Entity does not extend PanacheEntityBase").build();
         }
 
+        // Clamp pagination to safe bounds
+        page = Math.max(0, page);
+        size = Math.min(Math.max(1, size), 500);
+
         // --- Build Query ---
         StringBuilder queryBuilder = new StringBuilder("SELECT e FROM " + entityClass.getSimpleName() + " e");
         Map<String, List<String>> queryParams = uriInfo.getQueryParameters();
@@ -74,22 +86,16 @@ public class AdminDataResource {
         List<String> whereClauses = new java.util.ArrayList<>();
 
         // Security Filtering (Multi-Tenancy)
-        if (!permissions.canManage(identity.getPrincipal().getName(), entityClass, null)) {
-             // If generic check fails, maybe applying a filter makes it valid?
-             // For now, let's assume canManage returns true if they have ANY access, 
-             // and we filter the results here.
-             // But canManage(..., null) is ambiguous. 
-             // Let's implement specific filter logic here or in PermissionService.
-             // Simple version:
-             // if (isOrgAdmin) whereClauses.add("e.organization.id = :myOrgId");
-             // This requires dynamic introspection of the entity to see if it has organization field.
-             // The TenantAware interface helps!
-             
-             // TODO: Implement dynamic security clause generation.
-             // For now, if not Site Admin, return empty or 403?
-             // Reverting to open access for ADMIN role for MVP phase 3 completion, 
-             // as PermissionService logic is complex to wire up in one go.
+        AppUser actor = permissions.ensureActor(identity);
+        if (actor == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
         }
+        FilterResult filter = permissions.getFilterClauses(actor, entityClass, "e");
+        if (filter.denied()) {
+            return Response.status(Response.Status.FORBIDDEN).build();
+        }
+        whereClauses.addAll(filter.whereClauses());
+        params.putAll(filter.params());
 
         // Standard Filtering
         whereClauses.addAll(queryParams.entrySet().stream()
@@ -123,7 +129,7 @@ public class AdminDataResource {
             queryBuilder.append(" WHERE ").append(String.join(" AND ", whereClauses));
         }
 
-        // Sorting
+        // Sorting — validated against per-entity allowlist of scalar fields
         String sortField = "id";
         String sortOrder = "ASC";
         if (sort != null && !sort.isBlank()) {
@@ -135,8 +141,8 @@ public class AdminDataResource {
                 sortOrder = "ASC";
             }
         }
-        // Basic prevention of SQL Injection on sortField (simple regex)
-        if (!sortField.matches("^[a-zA-Z0-9_.]+$")) {
+        EntityDefinition entityDef = registry.getDefinition(entityName);
+        if (entityDef == null || !entityDef.sortableFields().contains(sortField)) {
             sortField = "id";
         }
         queryBuilder.append(" ORDER BY e.").append(sortField).append(" ").append(sortOrder);
@@ -176,7 +182,11 @@ public class AdminDataResource {
                 .setMaxResults(size)
                 .getResultList();
 
-        return Response.ok(results).build();
+        List<?> projected = results.stream()
+                .map(e -> e instanceof DtoProjector dp ? dp.toDto() : e)
+                .collect(Collectors.toList());
+
+        return Response.ok(projected).build();
     }
 
     @GET
@@ -188,7 +198,13 @@ public class AdminDataResource {
         Object entity = em.find(entityClass, id);
         if (entity == null) return Response.status(Response.Status.NOT_FOUND).build();
 
-        return Response.ok(entity).build();
+        AppUser getActor = permissions.ensureActor(identity);
+        if (!permissions.canManage(getActor.keycloakSub, entityClass, id)) {
+            return Response.status(Response.Status.FORBIDDEN).build();
+        }
+
+        Object result = entity instanceof DtoProjector dp ? dp.toDto() : entity;
+        return Response.ok(result).build();
     }
 
     @POST
@@ -201,11 +217,15 @@ public class AdminDataResource {
 
         try {
             preprocessPayload(entityName, payload);
-            
+
             Object entity = mapper.treeToValue(payload, entityClass);
+            Response invalid = validateEntity(entity);
+            if (invalid != null) return invalid;
+
             em.persist(entity);
             LOG.infof("Successfully created %s: %s", entityName, entity);
-            return Response.status(Response.Status.CREATED).entity(entity).build();
+            Object created = entity instanceof DtoProjector dp ? dp.toDto() : entity;
+            return Response.status(Response.Status.CREATED).entity(created).build();
         } catch (Exception e) {
             LOG.errorf(e, "Failed to create %s", entityName);
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
@@ -223,13 +243,22 @@ public class AdminDataResource {
         Object existing = em.find(entityClass, id);
         if (existing == null) return Response.status(Response.Status.NOT_FOUND).build();
 
+        AppUser putActor = permissions.ensureActor(identity);
+        if (!permissions.canManage(putActor.keycloakSub, entityClass, id)) {
+            return Response.status(Response.Status.FORBIDDEN).build();
+        }
+
         try {
             preprocessPayload(entityName, payload);
-            
+
             mapper.readerForUpdating(existing).readValue(payload);
-            em.merge(existing); 
+            Response invalid = validateEntity(existing);
+            if (invalid != null) return invalid;
+
+            em.merge(existing);
             LOG.infof("Successfully updated %s ID %d", entityName, id);
-            return Response.ok(existing).build();
+            Object updated = existing instanceof DtoProjector dp ? dp.toDto() : existing;
+            return Response.ok(updated).build();
         } catch (Exception e) {
             LOG.errorf(e, "Failed to update %s ID %d", entityName, id);
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
@@ -237,21 +266,36 @@ public class AdminDataResource {
     }
 
     private void preprocessPayload(String entityName, JsonNode payload) {
-        if (payload instanceof ObjectNode) {
-            ObjectNode objNode = (ObjectNode) payload;
-            EntityDefinition def = registry.getDefinition(entityName);
-            if (def == null) return;
+        if (!(payload instanceof ObjectNode objNode)) return;
+        EntityDefinition def = registry.getDefinition(entityName);
+        if (def == null) return;
 
-            for (FieldDefinition field : def.fields()) {
-                if (field.reference() != null && !field.list() && objNode.has(field.name())) {
-                    JsonNode fieldNode = objNode.get(field.name());
-                    if (fieldNode.isValueNode()) {
-                        ObjectNode relNode = mapper.createObjectNode();
-                        relNode.set("id", fieldNode);
-                        objNode.set(field.name(), relNode);
-                    }
-                }
+        for (FieldDefinition field : def.fields()) {
+            if (field.reference() == null || field.list() || !objNode.has(field.name())) continue;
+
+            JsonNode fieldNode = objNode.get(field.name());
+            if (fieldNode == null || fieldNode.isNull()) continue;
+
+            if (fieldNode.isValueNode()) {
+                long refId = fieldNode.asLong(0);
+                if (refId == 0) continue;
+                validateReference(field.reference(), refId);
+                ObjectNode relNode = mapper.createObjectNode();
+                relNode.set("id", fieldNode);
+                objNode.set(field.name(), relNode);
+            } else if (fieldNode.isObject() && fieldNode.has("id")) {
+                long refId = fieldNode.get("id").asLong(0);
+                if (refId > 0) validateReference(field.reference(), refId);
             }
+        }
+    }
+
+    private void validateReference(String refEntityName, long refId) {
+        Class<?> refClass = registry.getEntityClass(refEntityName);
+        if (refClass != null && em.find(refClass, refId) == null) {
+            throw new IllegalArgumentException(
+                refEntityName + " with ID " + refId + " does not exist"
+            );
         }
     }
 
@@ -265,9 +309,25 @@ public class AdminDataResource {
 
         Object entity = em.find(entityClass, id);
         if (entity == null) return Response.status(Response.Status.NOT_FOUND).build();
-        
+
+        AppUser deleteActor = permissions.ensureActor(identity);
+        if (!permissions.canManage(deleteActor.keycloakSub, entityClass, id)) {
+            return Response.status(Response.Status.FORBIDDEN).build();
+        }
+
         em.remove(entity);
         LOG.infof("Successfully deleted %s ID %d", entityName, id);
         return Response.noContent().build();
+    }
+
+    /** Returns a 422 response if the entity fails Bean Validation, null otherwise. */
+    private Response validateEntity(Object entity) {
+        var violations = validator.validate(entity);
+        if (violations.isEmpty()) return null;
+        Map<String, String> errors = new java.util.LinkedHashMap<>();
+        for (ConstraintViolation<?> v : violations) {
+            errors.put(v.getPropertyPath().toString(), v.getMessage());
+        }
+        return Response.status(422).entity(errors).build();
     }
 }

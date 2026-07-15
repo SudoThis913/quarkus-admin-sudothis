@@ -1,0 +1,114 @@
+# SudoThis Admin — single-node Raspberry Pi 4 (2GB) deployment.
+#
+# Design constraints:
+#  - The pi also runs the aquarium-monitor stack; this project uses its own
+#    compose project name, network, and volumes so the two never interact.
+#  - The pi kernel has cgroup memory limits DISABLED (enabling them needs a
+#    reboot, which would take down the other stack). mem_limit values below are
+#    therefore advisory; the real memory controls are the explicit JVM -Xmx
+#    flags and the MySQL buffer tuning.
+#  - No Redis: the app uses in-process Caffeine cache in %prod (single node).
+#  - MySQL is network-internal only (no host port). Only the app (8081) and
+#    Keycloak (8180) are published, because browsers need both for OIDC.
+name: sudothis
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sudothis-mysql
+    restart: unless-stopped
+    command:
+      - --innodb-buffer-pool-size=64M
+      - --performance-schema=OFF
+      - --max-connections=50
+      - --skip-name-resolve
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: quarkusdb
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - sudothis-mysql-data:/var/lib/mysql
+    networks: [sudothis_net]
+    mem_limit: 384m
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2
+    container_name: sudothis-keycloak
+    restart: unless-stopped
+    command:
+      - start
+      - --import-realm
+      - --http-enabled=true
+      - --hostname-strict=false
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_ADMIN_USER}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
+      KC_HEALTH_ENABLED: "true"
+      # Explicit heap — without cgroup limits, percentage-based sizing would
+      # see the whole 2GB host and starve everything else.
+      JAVA_OPTS_APPEND: "-Xms64m -Xmx256m -XX:MaxMetaspaceSize=160m"
+    ports:
+      - "8180:8080"
+    volumes:
+      - sudothis-keycloak-data:/opt/keycloak/data
+      - ./keycloak-realm-pi.json:/opt/keycloak/data/import/realm.json:ro
+    networks: [sudothis_net]
+    mem_limit: 640m
+    healthcheck:
+      # KC image ships no curl/wget; use bash /dev/tcp against the mgmt port
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q 'UP' <&3"]
+      interval: 20s
+      timeout: 5s
+      retries: 20
+      start_period: 300s
+    logging: *logging
+
+  app:
+    image: ${APP_IMAGE:-quarkus-admin:prod}
+    container_name: sudothis-admin
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    environment:
+      QUARKUS_PROFILE: prod
+      JDBC_URL: jdbc:mysql://mysql:3306/quarkusdb
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      # Must be the browser-reachable URL; the container reaches it via NAT hairpin
+      OIDC_AUTH_SERVER_URL: http://${PI_HOST}:8180/realms/sudothis
+      JAVA_OPTS_APPEND: "-Xms48m -Xmx192m -XX:MaxMetaspaceSize=128m"
+    ports:
+      - "8081:8081"
+    networks: [sudothis_net]
+    mem_limit: 448m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8081/q/health/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 120s
+    logging: *logging
+
+networks:
+  sudothis_net:
+    name: sudothis_net
+    driver: bridge
+
+volumes:
+  sudothis-mysql-data:
+  sudothis-keycloak-data:

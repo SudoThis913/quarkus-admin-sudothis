@@ -1,9 +1,10 @@
-// src/main/java/com/sudothis/model/AppUser.java
 package com.sudothis.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sudothis.audit.AuditListener;
 import com.sudothis.meta.AdminResource;
+import com.sudothis.meta.DtoProjector;
+import com.sudothis.resource.dto.AppUserDto;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -12,28 +13,24 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Lightweight user profile that complements Keycloak‑based authentication.
- * <p>
- * Keycloak/OIDC is the single source of truth for identity and roles, so we
- * store only the data that is <em>local‑to‑this‑service</em> (timestamps,
- * preferences, feature flags …).  The record is created lazily the first time
- * we see a Keycloak token with an unknown {@code sub} claim.
+ * Lightweight user profile that complements Keycloak-based authentication.
+ * Keycloak/OIDC is the single source of truth for identity and roles; we store
+ * only service-local data. The record is created lazily on first token encounter.
  */
 @Entity
 @Table(name = "APP_USER")
 @EntityListeners(AuditListener.class)
 @AdminResource(displayName = "Users")
-public class AppUser extends PanacheEntity implements TenantAware {
+@org.hibernate.annotations.BatchSize(size = 50)
+public class AppUser extends PanacheEntity implements TenantAware, DtoProjector {
 
-    /** Copied from Keycloak's {@code preferred_username} claim for convenience. */
     @Column(name = "USERNAME", nullable = false)
     public String username;
 
-    /** The unique subject ID from Keycloak/OIDC token. */
+    /** Immutable subject ID from Keycloak/OIDC. Used as the canonical actor identifier. */
     @Column(name = "KEYCLOAK_SUB", unique = true)
     public String keycloakSub;
 
-    /** Optional – only stored if realm is configured to include e‑mail in ID token. */
     @Email
     @Column(name = "EMAIL")
     public String email;
@@ -44,12 +41,30 @@ public class AppUser extends PanacheEntity implements TenantAware {
     @Column(name = "IS_ACTIVE")
     public boolean active = true;
 
+    /** Flag: employees belong to exactly one company (enforced by PermissionService). */
+    public boolean isEmployee;
+
+    /**
+     * For employee users, this is their single company — used for TenantAware resolution.
+     * Customer users may have many companies (ManyToMany below) and leave this null.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "primary_company_id")
+    public Company primaryCompany;
+
+    /** Optional assignment of this user to a UserType permission template. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_type_id")
+    public UserType userType;
+
+    /**
+     * Legacy direct org link — kept for backward compatibility.
+     * Prefer resolving org via primaryCompany for employees.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "org_id")
     public Organization organization;
 
-    // Using Set for ManyToMany to support Multi-Tenancy
-    
     @JsonIgnore
     @ManyToMany
     @JoinTable(
@@ -67,25 +82,49 @@ public class AppUser extends PanacheEntity implements TenantAware {
         inverseJoinColumns = @JoinColumn(name = "team_id")
     )
     public Set<Team> teams = new HashSet<>();
-    
-    public boolean isEmployee; // Flag to enforce single-org constraints if true
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    public Set<GroupMembership> groupMemberships = new HashSet<>();
+
+    // -------------------------------------------------------------------------
+    // TenantAware — resolve tenant context for permission filtering
+    // -------------------------------------------------------------------------
 
     @Override
-    public Long getOrganizationId() { return null; } // Ambiguous for User
+    public Long getOrganizationId() {
+        if (primaryCompany != null && primaryCompany.organization != null) {
+            return primaryCompany.organization.id;
+        }
+        if (organization != null) {
+            return organization.id;
+        }
+        return null;
+    }
 
     @Override
-    public Long getCompanyId() { return null; }
+    public Long getCompanyId() {
+        return primaryCompany != null ? primaryCompany.id : null;
+    }
 
     @Override
-    public Long getTeamId() { return null; }
+    public Long getTeamId() {
+        // Users can belong to multiple teams; filtering by group membership handles multi-team
+        return null;
+    }
 
-    // ---------------------------------------------------------------------
+    @Override public String jpqlOrganizationIdPath() { return "organization.id"; }
+    @Override public String jpqlCompanyIdPath()      { return "primaryCompany.id"; }
+
+    // -------------------------------------------------------------------------
     // Factory helpers
-    // ---------------------------------------------------------------------
+    // -------------------------------------------------------------------------
 
-    /**
-     * Provision (or fetch) a local profile from Keycloak token attributes.
-     */
+    @Override
+    public Object toDto() {
+        return AppUserDto.from(this);
+    }
+
     public static AppUser ensureExists(String keycloakSub,
                                        String preferredUsername,
                                        String email) {

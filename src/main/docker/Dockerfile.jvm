@@ -80,6 +80,8 @@
 ###
 FROM registry.access.redhat.com/ubi9/openjdk-17:1.21
 
+
+
 ENV LANGUAGE='en_US:en'
 
 
@@ -92,8 +94,7 @@ COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
 # ... (previous Dockerfile content) ...
 
 # Copy and make wait-for-mysql.sh executable
-COPY wait-for-mysql.sh /wait-for-mysql.sh
-RUN chmod +x /wait-for-mysql.sh
+COPY --chmod=755 --chown=185:185 wait-for-mysql.sh /wait-for-mysql.sh
 
 EXPOSE 8080
 USER 185

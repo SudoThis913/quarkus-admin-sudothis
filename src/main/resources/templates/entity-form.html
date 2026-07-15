@@ -1,25 +1,86 @@
 <div id="entity-form-view">
-    <h3>{#if entityData}Edit{else}Create{/if} {entityDefinition.displayName}</h3>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">{#if entityData}Edit{#else}Create{/if} {entityDefinition.displayName}</h4>
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                hx-get="/admin/{entityName}"
+                hx-target="#main-content"
+                hx-swap="innerHTML"
+                hx-push-url="true">← Back</button>
+    </div>
 
-    <form hx-post="{#if entityData}/api/admin/data/{entityName}/{entityData.id}{else}/api/admin/data/{entityName}{/if}"
-          hx-put="{#if entityData}/api/admin/data/{entityName}/{entityData.id}{/if}"
+    {#if entityData}
+    <form hx-put="/admin/{entityName}/{entityData.id}"
           hx-target="#main-content"
-          hx-swap="outerHTML">
+          hx-swap="innerHTML">
+    {#else}
+    <form hx-post="/admin/{entityName}"
+          hx-target="#main-content"
+          hx-swap="innerHTML">
+    {/if}
+
         {#for field in entityDefinition.fields}
-        {#if field.name != "id" && field.name != "createdAt"}
+        {#if field.name != "id" && field.name != "createdAt" && !field.list}
         <div class="mb-3">
-            <label for="{field.name}" class="form-label">{field.name}</label>
-            {#if field.reference}
-            <input type="number" class="form-control" id="{field.name}" name="{field.name}" value="{#if entityData}{entityData.get(field.name).id}{/if}" {#if field.required}required{/if}>
-            <small class="form-text text-muted">Enter ID of related {field.reference}</small>
+            <label for="{field.name}" class="form-label fw-semibold">
+                {field.name}{#if field.required} <span class="text-danger">*</span>{/if}
+            </label>
+
+            {#if field.type == "boolean" || field.type == "Boolean"}
+            <div class="form-check">
+                <input type="checkbox"
+                       class="form-check-input"
+                       id="{field.name}"
+                       name="{field.name}"
+                       value="true"
+                       {#if entityData && entityData.get(field.name)}checked{/if}>
+            </div>
+
+            {#else if field.reference}
+            <div class="ref-picker position-relative"
+                 data-ref-entity="{field.reference}"
+                 data-field-required="{field.required}">
+                <input type="text"
+                       class="form-control ref-search"
+                       autocomplete="off"
+                       placeholder="Search {field.reference} by name or ID…">
+                <div class="ref-dropdown list-group shadow-sm"
+                     style="display:none;position:absolute;z-index:1000;width:100%;max-height:200px;overflow-y:auto;"></div>
+                <input type="hidden"
+                       id="{field.name}"
+                       name="{field.name}"
+                       class="ref-id-input"
+                       value="{#if entityData && entityData.get(field.name)}{entityData.get(field.name)}{/if}">
+                <div class="form-text text-muted ref-label"></div>
+            </div>
+
+            {#else if field.type == "Long" || field.type == "Integer"}
+            <input type="number"
+                   class="form-control"
+                   id="{field.name}"
+                   name="{field.name}"
+                   value="{#if entityData}{entityData.get(field.name)}{/if}"
+                   {#if field.required}required{/if}>
+
             {#else}
-            <input type="{#if field.type == 'Long' || field.type == 'Integer'}number{#else}text{/if}" 
-                   class="form-control" id="{field.name}" name="{field.name}" value="{#if entityData}{entityData.get(field.name)}{/if}" {#if field.required}required{/if}>
+            <input type="text"
+                   class="form-control"
+                   id="{field.name}"
+                   name="{field.name}"
+                   value="{#if entityData}{entityData.get(field.name)}{/if}"
+                   {#if field.required}required{/if}>
             {/if}
+
         </div>
         {/if}
         {/for}
-        <button type="submit" class="btn btn-primary">Save</button>
-        <button type="button" class="btn btn-secondary" hx-get="/admin/{entityName}" hx-target="#main-content" hx-swap="outerHTML">Cancel</button>
+
+        <div class="d-flex gap-2 mt-3">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-outline-secondary"
+                    hx-get="/admin/{entityName}"
+                    hx-target="#main-content"
+                    hx-swap="innerHTML"
+                    hx-push-url="true">Cancel</button>
+        </div>
     </form>
 </div>

@@ -48,7 +48,8 @@ nb-configuration.xml
 *.key
 *.pem
 *.jks
-secrets/ # Generic secrets directory
+# Generic secrets directory
+secrets/
 
 # Logs
 *.log
@@ -66,11 +67,13 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
-/terraform/environments/prod/secrets/ # Explicitly ignore prod secrets as per policy
+# Explicitly ignore prod secrets as per policy
+/terraform/environments/prod/secrets/
 
 # Project specific ignores
 src/main/resources/Untitled-1.txt
 project_structure.txt
 dev-keystore.p12
 dev_pkcs1.key
-src/main/resources/conf/ # Contains sensitive dev keys/certs
+# Contains sensitive dev keys/certs
+src/main/resources/conf/

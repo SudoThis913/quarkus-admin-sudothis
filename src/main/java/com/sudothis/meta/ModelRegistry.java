@@ -10,6 +10,7 @@ import jakarta.persistence.metamodel.PluralAttribute;
 import jakarta.persistence.metamodel.SingularAttribute;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,20 +43,23 @@ public class ModelRegistry {
         String displayName = annotation.displayName().isEmpty() ? name : annotation.displayName();
         
         List<FieldDefinition> fields = new ArrayList<>();
-        
+        Set<String> sortableFields = new HashSet<>();
+        // id is always sortable
+        sortableFields.add("id");
+
         for (Attribute<?, ?> attr : entity.getAttributes()) {
             boolean required = false;
             if (attr instanceof SingularAttribute) {
                 required = !((SingularAttribute<?, ?>) attr).isOptional();
             }
-            
+
             String reference = null;
             if (attr.isAssociation()) {
                 Class<?> referenceType = null;
-                if (attr.isCollection()) { // PluralAttribute (OneToMany, ManyToMany)
+                if (attr.isCollection()) {
                     PluralAttribute<?, ?, ?> pa = (PluralAttribute<?, ?, ?>) attr;
                     referenceType = pa.getElementType().getJavaType();
-                } else { // SingularAttribute (ManyToOne, OneToOne)
+                } else {
                     SingularAttribute<?, ?> sa = (SingularAttribute<?, ?>) attr;
                     referenceType = sa.getJavaType();
                 }
@@ -70,9 +74,14 @@ public class ModelRegistry {
                 attr.getJavaType().getSimpleName(),
                 required,
                 attr.isCollection(),
-                reference 
+                reference
             ));
             LOG.infof("Field: %s, Type: %s, Reference: %s", attr.getName(), attr.getJavaType().getSimpleName(), reference);
+
+            // Only scalar (non-collection, non-association) fields are sortable
+            if (!attr.isCollection() && !attr.isAssociation()) {
+                sortableFields.add(attr.getName());
+            }
         }
 
         EntityDefinition def = new EntityDefinition(
@@ -80,7 +89,8 @@ public class ModelRegistry {
             displayName,
             "/api/admin/data/" + name,
             annotation.readOnly(),
-            fields
+            fields,
+            Set.copyOf(sortableFields)
         );
 
         registry.put(name, def);

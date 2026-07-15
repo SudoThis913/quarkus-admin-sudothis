@@ -1,74 +1,131 @@
 <div id="entity-list-view">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3>{entityDefinition.displayName}</h3>
-        <button class="btn btn-primary" hx-get="/admin/{entityName}/new" hx-target="#main-content" hx-swap="outerHTML">
-            Create New
-        </button>
+        <div>
+            <h4 class="mb-0">{entityDefinition.displayName}</h4>
+            <small class="text-muted">{dataList.size()} record(s) on this page</small>
+        </div>
+        {#if !entityDefinition.readOnly}
+        <button class="btn btn-primary btn-sm"
+                hx-get="/admin/{entityName}/new"
+                hx-target="#main-content"
+                hx-swap="innerHTML"
+                hx-push-url="true">+ New</button>
+        {/if}
     </div>
 
-    <!-- Filtering -->
-    <form hx-get="/admin/{entityName}" hx-target="#entity-list-view" hx-swap="outerHTML" class="row g-3 mb-3">
+    <!-- Filter form -->
+    <form hx-get="/admin/{entityName}"
+          hx-target="#main-content"
+          hx-swap="innerHTML"
+          hx-push-url="true"
+          class="row g-2 mb-3 align-items-end">
         {#for field in entityDefinition.fields}
-            {#if field.type == "String"}
-            <div class="col-auto">
-                <input type="text" name="{field.name}" class="form-control form-control-sm" placeholder="Filter by {field.name}">
-            </div>
-            {/if}
+        {#if field.type == "String" && !field.list && !field.reference}
+        <div class="col-auto">
+            <input type="text" name="{field.name}" class="form-control form-control-sm"
+                   placeholder="{field.name}" style="max-width:160px">
+        </div>
+        {/if}
         {/for}
         <div class="col-auto">
             <button type="submit" class="btn btn-sm btn-outline-secondary">Filter</button>
-            <a href="#" hx-get="/admin/{entityName}" hx-target="#entity-list-view" hx-swap="outerHTML" class="btn btn-sm btn-outline-danger">Clear</a>
+            <a href="/admin/{entityName}"
+               hx-get="/admin/{entityName}"
+               hx-target="#main-content"
+               hx-swap="innerHTML"
+               hx-push-url="true"
+               class="btn btn-sm btn-outline-danger ms-1">Clear</a>
         </div>
     </form>
 
-    <table class="table table-striped table-hover">
-        <thead>
-            <tr>
-                {#for field in entityDefinition.fields}
-                <th style="cursor: pointer;" 
-                    hx-get="/admin/{entityName}?sort={#if sort == field.name}-{field.name}{#else}{field.name}{/if}&{filterParams}"
-                    hx-target="#entity-list-view" 
-                    hx-swap="outerHTML">
-                    {field.name} {#if sort == field.name}▲{#else if sort == "-" + field.name}▼{/if}
-                </th>
-                {/for}
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {#for item in dataList}
-            <tr>
-                {#for field in entityDefinition.fields}
-                <td>
-                    {#if field.reference && item.get(field.name)}
-                        <span class="badge bg-secondary">{item.get(field.name).id}</span>
-                    {#else}
-                        {item.get(field.name)}
+    <!-- Data table -->
+    {#if dataList.isEmpty()}
+    <div class="text-center py-4 text-muted border rounded">
+        <p class="mb-0">No records found.</p>
+    </div>
+    {#else}
+    <div class="table-responsive">
+        <table class="table table-sm table-striped table-hover align-middle mb-2">
+            <thead class="table-dark">
+                <tr>
+                    {#for field in entityDefinition.fields}
+                    {#if !field.list}
+                    <th class="fw-normal"
+                        style="cursor:pointer; white-space:nowrap;"
+                        hx-get="/admin/{entityName}?sort={#if sortField == field.name && !sortDesc}-{field.name}{#else}{field.name}{/if}&size={size}&{filterParams}"
+                        hx-target="#main-content"
+                        hx-swap="innerHTML"
+                        hx-push-url="true">
+                        {field.name}{#if sortField == field.name} {#if sortDesc}▼{#else}▲{/if}{/if}
+                    </th>
                     {/if}
-                </td>
+                    {/for}
+                    <th class="fw-normal">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {#for item in dataList}
+                <tr>
+                    {#for field in entityDefinition.fields}
+                    {#if !field.list}
+                    <td style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                        {#if field.reference}
+                            {#if item.get(field.name)}
+                            <span class="badge bg-secondary">{item.get(field.name)}</span>
+                            {/if}
+                        {#else if field.type == "boolean" || field.type == "Boolean"}
+                            {#if item.get(field.name)}
+                            <span class="badge bg-success">yes</span>
+                            {#else}
+                            <span class="badge bg-secondary">no</span>
+                            {/if}
+                        {#else}
+                            {item.get(field.name)}
+                        {/if}
+                    </td>
+                    {/if}
+                    {/for}
+                    <td style="white-space:nowrap;">
+                        {#if !entityDefinition.readOnly}
+                        <button class="btn btn-outline-primary btn-sm py-0 px-2"
+                                hx-get="/admin/{entityName}/{item.id}"
+                                hx-target="#main-content"
+                                hx-swap="innerHTML"
+                                hx-push-url="true">Edit</button>
+                        <button class="btn btn-outline-danger btn-sm py-0 px-2 ms-1"
+                                hx-delete="/admin/{entityName}/{item.id}"
+                                hx-confirm="Delete this record?"
+                                hx-target="closest tr"
+                                hx-swap="outerHTML swap:300ms">Delete</button>
+                        {/if}
+                    </td>
+                </tr>
                 {/for}
-                <td>
-                    <button class="btn btn-sm btn-info" hx-get="/admin/{entityName}/{item.id}" hx-target="#main-content" hx-swap="outerHTML">Edit</button>
-                    <button class="btn btn-sm btn-danger" hx-delete="/api/admin/data/{entityName}/{item.id}" hx-confirm="Are you sure you want to delete this item?" hx-target="closest tr" hx-swap="outerHTML swap:1s">Delete</button>
-                </td>
-            </tr>
-            {/for}
-        </tbody>
-    </table>
-    
-    <div class="d-flex justify-content-between">
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="d-flex justify-content-between align-items-center mt-2">
         <div>
             {#if currentPage > 0}
-            <button class="btn btn-secondary btn-sm" hx-get="/admin/{entityName}?page={currentPage - 1}&size={size}&sort={sort}&{filterParams}" hx-target="#entity-list-view" hx-swap="outerHTML">Previous</button>
+            <button class="btn btn-secondary btn-sm"
+                    hx-get="/admin/{entityName}?page={currentPage - 1}&size={size}&sort={sort}&{filterParams}"
+                    hx-target="#main-content"
+                    hx-swap="innerHTML"
+                    hx-push-url="true">← Prev</button>
             {/if}
         </div>
-        <div>
-            Page {currentPage + 1}
-        </div>
+        <small class="text-muted">Page {currentPage + 1}</small>
         <div>
             {#if hasNextPage}
-            <button class="btn btn-secondary btn-sm" hx-get="/admin/{entityName}?page={nextPage}&size={size}&sort={sort}&{filterParams}" hx-target="#entity-list-view" hx-swap="outerHTML">Next</button>
+            <button class="btn btn-secondary btn-sm"
+                    hx-get="/admin/{entityName}?page={nextPage}&size={size}&sort={sort}&{filterParams}"
+                    hx-target="#main-content"
+                    hx-swap="innerHTML"
+                    hx-push-url="true">Next →</button>
             {/if}
         </div>
     </div>
+    {/if}
 </div>

@@ -12,6 +12,7 @@ import java.util.Set;
 @Table(name = "ORGANIZATION")
 @EntityListeners(AuditListener.class)
 @AdminResource(displayName = "Organizations")
+@org.hibernate.annotations.BatchSize(size = 50)
 public class Organization extends PanacheEntity implements TenantAware {
 
     @Column(nullable = false, unique = true)
@@ -37,4 +38,6 @@ public class Organization extends PanacheEntity implements TenantAware {
     public Long getTeamId() {
         return null;
     }
+
+    @Override public String jpqlOrganizationIdPath() { return "id"; }
 }

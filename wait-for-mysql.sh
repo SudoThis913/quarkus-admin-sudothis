@@ -1,18 +1,31 @@
 #!/bin/bash
 
-MAX_RETRIES=20
+# Generic wait-for-it.sh style script
+
+cmd="$@"
+
+if [ -z "$cmd" ]; then
+  echo "Usage: $0 host:port -- command_to_execute"
+  exit 1
+fi
+
+HOSTPORT=$(echo $cmd | cut -d' ' -f1)
+cmd=${cmd#* } # Remove host:port part
+cmd=${cmd#-- } # Remove -- part
+
+HOST=$(echo $HOSTPORT | cut -d: -f1)
+PORT=$(echo $HOSTPORT | cut -d: -f2)
+
+MAX_RETRIES=40
 SLEEP_TIME=3
 COUNTER=0
 
-DB_HOST=${DB_HOST:-"localhost"} # Default to localhost if not set
-DB_PORT=${DB_PORT:-"3306"}
+echo "Waiting for $HOST:$PORT to become available..."
 
-echo "Waiting for MySQL at ${DB_HOST}:${DB_PORT} to become available..."
-
-until nc -z ${DB_HOST} ${DB_PORT}; do
+until bash -c "</dev/tcp/$HOST/$PORT" &>/dev/null; do
   sleep $SLEEP_TIME
   COUNTER=$((COUNTER+1))
-  echo "Attempt $COUNTER: MySQL not ready yet."
+  echo "Attempt $COUNTER: $HOST:$PORT not ready yet."
 
   if [ $COUNTER -ge $MAX_RETRIES ]; then
     echo "Max retries reached. Exiting."
@@ -20,11 +33,5 @@ until nc -z ${DB_HOST} ${DB_PORT}; do
   fi
 done
 
-echo "MySQL is up - launching application..."
-# The original Dockerfile.jvm used /opt/jboss/container/java/run/run-java.sh
-# We need to ensure that the original entrypoint logic is still executed.
-# It typically involves starting the JAR or executing the run-java.sh script.
-# Assuming the default Quarkus Docker image puts the JAR at /deployments/quarkus-run.jar
-# and the run-java.sh script is already part of the base image setup.
-# Let's call the original entrypoint script after successful connection.
-exec /opt/jboss/container/java/run/run-java.sh
+echo "$HOST:$PORT is up - launching application..."
+exec $cmd

@@ -132,6 +132,8 @@ public class AdminDataResourceTest {
             .post("/api/admin/data/AppUser")
         .then()
             .statusCode(201)
-            .body("organization.id", Matchers.equalTo(orgId));
+            // AppUserDto collapses reference fields to their FK id (M1 fix) —
+            // create() now returns the DTO projection, not the raw entity
+            .body("organization", Matchers.equalTo(orgId));
     }
 }
