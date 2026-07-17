@@ -85,10 +85,9 @@ public class RateLimitFilter implements ContainerRequestFilter {
 
     private String resolveActorKey(ContainerRequestContext ctx) {
         try {
-            SecurityIdentity identity = identityInstance.get();
-            if (identity != null && !identity.isAnonymous()) {
-                String sub = identity.getAttribute("sub");
-                return (sub != null) ? sub : identity.getPrincipal().getName();
+            String sub = Subjects.of(identityInstance.get());
+            if (sub != null) {
+                return sub;
             }
         } catch (Exception ignored) {
             // fall through to IP-based key

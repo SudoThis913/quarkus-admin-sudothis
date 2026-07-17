@@ -43,9 +43,8 @@ public class RequestLoggingFilter implements ContainerRequestFilter, ContainerRe
 
         try {
             SecurityIdentity identity = identityInstance.get();
-            if (identity != null && !identity.isAnonymous()) {
-                String sub = identity.getAttribute("sub");
-                String userId = (sub != null) ? sub : identity.getPrincipal().getName();
+            String userId = com.sudothis.security.Subjects.of(identity);
+            if (userId != null) {
                 MDC.put(MDC_USER_ID, userId);
             }
         } catch (Exception ignored) {

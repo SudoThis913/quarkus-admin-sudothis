@@ -233,23 +233,38 @@ public class PermissionService {
 
     /**
      * Resolves or bootstraps an actor from the SecurityIdentity.
-     * Uses the `sub` claim when available, falling back to the principal name
-     * (for @TestSecurity compatibility). If the user doesn't exist locally and
-     * has the "admin" Keycloak role, they are auto-provisioned as SITE_ADMIN.
+     * The canonical id is the OIDC sub claim resolved by {@link Subjects}
+     * (falls back to principal name for @TestSecurity / form auth). If the
+     * user doesn't exist locally and has the "admin" Keycloak role, they are
+     * auto-provisioned as SITE_ADMIN.
      */
     @Transactional
     public AppUser ensureActor(io.quarkus.security.identity.SecurityIdentity identity) {
-        String sub = identity.getAttribute("sub");
+        String effectiveSub = Subjects.of(identity);
         String principalName = identity.getPrincipal().getName();
-        String effectiveSub = (sub != null) ? sub : principalName;
 
         AppUser actor = AppUser.find("keycloakSub", effectiveSub).firstResult();
-        if (actor != null) return actor;
+        if (actor == null) {
+            // Pre-sub-claim deployments keyed rows by username — re-key in place
+            actor = AppUser.migrateLegacySub(effectiveSub, principalName);
+            if (actor != null) {
+                LOG.warnf("Migrated actor identity for %s: username-keyed row re-keyed to sub %s",
+                    principalName, effectiveSub);
+            }
+        }
+        if (actor == null) {
+            actor = AppUser.ensureExists(effectiveSub, principalName, identity.getAttribute("email"));
+        }
 
-        // Bootstrap: first-time admin login — provision user + SITE_ADMIN permission
-        actor = AppUser.ensureExists(effectiveSub, principalName, identity.getAttribute("email"));
-
-        if (identity.hasRole("admin")) {
+        // Bootstrap SITE_ADMIN for admin-role users with no permissions at all.
+        // Deliberately not limited to freshly created rows: a user whose first
+        // touch was /account or /me exists without permissions and would
+        // otherwise never be bootstrapped. Consequence: fully de-permissioning
+        // a site admin also requires removing their Keycloak "admin" realm
+        // role (which gates all admin endpoints anyway).
+        if (identity.hasRole("admin")
+            && AdminPermission.count("user", actor) == 0
+            && com.sudothis.model.GroupMembership.count("user", actor) == 0) {
             AdminPermission p = new AdminPermission();
             p.user = actor;
             p.role = AdminPermission.Role.SITE_ADMIN;

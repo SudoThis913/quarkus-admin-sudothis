@@ -65,9 +65,9 @@ public class AppUserResource {
     @SecurityRequirement(name = "jwt")
     @Transactional
     public Response me() {
-        String sub = identity.getAttribute("sub");
+        String sub = com.sudothis.security.Subjects.of(identity);
         if (sub == null) {
-            LOG.warn("No 'sub' claim in token for /me request");
+            LOG.warn("No subject resolvable for /me request");
             return Response.status(Response.Status.UNAUTHORIZED)
                 .entity("Missing subject claim").build();
         }

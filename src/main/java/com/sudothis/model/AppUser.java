@@ -132,11 +132,35 @@ public class AppUser extends PanacheEntity implements TenantAware, DtoProjector 
         if (existing != null) {
             return existing;
         }
+        AppUser migrated = migrateLegacySub(keycloakSub, preferredUsername);
+        if (migrated != null) {
+            return migrated;
+        }
         AppUser user = new AppUser();
         user.keycloakSub = keycloakSub;
         user.username    = preferredUsername;
         user.email       = email;
         user.persist();
         return user;
+    }
+
+    /**
+     * Re-keys a row created by pre-sub-claim deployments, where the fallback
+     * stored the username in keycloakSub instead of the OIDC UUID. Matching is
+     * deliberately narrow: only a row whose keycloakSub equals this login's
+     * username is migrated, so a genuinely different user can never be
+     * captured. Returns null when there is nothing to migrate. The keycloakSub
+     * update itself is picked up by AuditListener as a regular entity UPDATE.
+     */
+    public static AppUser migrateLegacySub(String realSub, String preferredUsername) {
+        if (realSub == null || realSub.equals(preferredUsername)) {
+            return null; // no separate sub available (tests, form auth) — nothing to migrate
+        }
+        AppUser legacy = find("keycloakSub", preferredUsername).firstResult();
+        if (legacy == null) {
+            return null;
+        }
+        legacy.keycloakSub = realSub;
+        return legacy;
     }
 }

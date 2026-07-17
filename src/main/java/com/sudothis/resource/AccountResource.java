@@ -181,10 +181,8 @@ public class AccountResource {
     // ------------------------------------------------------------------
 
     private AppUser currentUser() {
-        String sub = identity.getAttribute("sub");
-        String effectiveSub = sub != null ? sub : identity.getPrincipal().getName();
-        return AppUser.ensureExists(effectiveSub, identity.getPrincipal().getName(),
-            identity.getAttribute("email"));
+        return AppUser.ensureExists(com.sudothis.security.Subjects.of(identity),
+            identity.getPrincipal().getName(), identity.getAttribute("email"));
     }
 
     private void audit(AppUser user, String action, String payload) {

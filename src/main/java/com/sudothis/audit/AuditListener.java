@@ -115,8 +115,10 @@ public class AuditListener {
                 return "system/anonymous";
             }
 
-            String sub = identity.getAttribute("sub");
-            String effectiveSub = (sub != null) ? sub : identity.getPrincipal().getName();
+            String effectiveSub = com.sudothis.security.Subjects.of(identity);
+            if (effectiveSub == null) {
+                return "system/anonymous";
+            }
 
             try {
                 ImpersonationContext impCtx = Arc.container().instance(ImpersonationContext.class).get();

@@ -72,10 +72,8 @@ public class AccessAuditFilter implements ContainerResponseFilter {
 
     private String resolveActor() {
         try {
-            SecurityIdentity identity = identityInstance.get();
-            if (identity == null || identity.isAnonymous()) return "anonymous";
-            String sub = identity.getAttribute("sub");
-            return (sub != null) ? sub : identity.getPrincipal().getName();
+            String sub = com.sudothis.security.Subjects.of(identityInstance.get());
+            return sub != null ? sub : "anonymous";
         } catch (Exception e) {
             return "unknown";
         }

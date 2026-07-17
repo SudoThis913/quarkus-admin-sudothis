@@ -54,8 +54,7 @@ public class ImpersonationFilter implements ContainerRequestFilter {
 
         // Impersonator must be the authenticated caller
         SecurityIdentity identity = identityInstance.get();
-        String callerSub = identity.getAttribute("sub");
-        String effectiveSub = (callerSub != null) ? callerSub : identity.getPrincipal().getName();
+        String effectiveSub = Subjects.of(identity);
 
         if (!session.impersonator.keycloakSub.equals(effectiveSub)) {
             req.abortWith(Response.status(Response.Status.FORBIDDEN)
