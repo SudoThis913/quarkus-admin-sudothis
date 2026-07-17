@@ -32,6 +32,9 @@ for arg in "$@"; do
   esac
 done
 
+command -v docker >/dev/null && docker version >/dev/null 2>&1 \
+  || { echo "Docker is not available in WSL — is Docker Desktop running with WSL integration?" >&2; exit 1; }
+
 PI_HOST="$(ssh -G "$PI_SSH" | awk '/^hostname /{print $2}')"
 [ -n "$PI_HOST" ] || { echo "Cannot resolve hostname for ssh alias '$PI_SSH'" >&2; exit 1; }
 echo "==> Deploy target: $PI_SSH ($PI_HOST), remote dir $REMOTE_DIR"

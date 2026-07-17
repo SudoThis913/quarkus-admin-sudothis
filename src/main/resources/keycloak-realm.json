@@ -43,6 +43,9 @@
       "username": "admin@example.com",
       "enabled": true,
       "emailVerified": true,
+      "email": "admin@example.com",
+      "firstName": "Site",
+      "lastName": "Admin",
       "credentials": [
         { "type": "password", "value": "admin123", "temporary": false }
       ],
