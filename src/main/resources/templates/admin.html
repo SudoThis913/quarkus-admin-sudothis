@@ -37,6 +37,18 @@
     <div id="topbar">
         <h5>SudoThis Admin</h5>
         <span class="badge bg-warning text-dark badge-pill htmx-indicator" id="loading-badge">Loading…</span>
+        <div class="dropdown ms-auto">
+            <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button"
+                    id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                👤 {currentUser}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                <li><h6 class="dropdown-header">{currentUser}</h6></li>
+                <li><a class="dropdown-item" href="/account">Account settings</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="/logout">Sign out</a></li>
+            </ul>
+        </div>
     </div>
 
     <div id="shell">

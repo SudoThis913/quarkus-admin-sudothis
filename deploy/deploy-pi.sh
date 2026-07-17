@@ -66,24 +66,6 @@ else
   echo "==> Skipping build; deploying existing $IMAGE"
 fi
 
-echo "==> Generating pi realm import (redirect URIs + LAN URLs)"
-python3 - "$SCRIPT_DIR/../src/main/resources/keycloak-realm.json" \
-          "$SCRIPT_DIR/keycloak-realm-pi.json" "$PI_HOST" <<'PYEOF'
-import json, sys
-src, dst, host = sys.argv[1], sys.argv[2], sys.argv[3]
-realm = json.load(open(src))
-# LAN deployment is plain http — require no TLS inside Keycloak
-realm["sslRequired"] = "none"
-for client in realm.get("clients", []):
-    if client.get("clientId") == "sudothis-app":
-        uris = set(client.get("redirectUris", []))
-        uris.add(f"http://{host}:8081/*")
-        client["redirectUris"] = sorted(uris)
-        client["webOrigins"] = [f"http://{host}:8081"]
-json.dump(realm, open(dst, "w"), indent=2)
-print(f"    wrote {dst}")
-PYEOF
-
 echo "==> Preparing remote directory and secrets"
 ssh "$PI_SSH" "mkdir -p '$REMOTE_DIR'"
 # Generate .env once; never overwrite (it holds the DB/KC credentials in use)
@@ -100,6 +82,31 @@ APP_IMAGE=quarkus-admin:prod
 EOF
   echo '    generated new $REMOTE_DIR/.env (chmod 600)'
 "
+# Backend client secret: append once for .env files created before this existed
+ssh "$PI_SSH" "grep -q '^KC_BACKEND_CLIENT_SECRET=' '$REMOTE_DIR/.env'" \
+  || ssh "$PI_SSH" "echo KC_BACKEND_CLIENT_SECRET=\$(openssl rand -hex 20) >> '$REMOTE_DIR/.env'"
+KC_BACKEND_SECRET="$(ssh "$PI_SSH" "grep '^KC_BACKEND_CLIENT_SECRET=' '$REMOTE_DIR/.env' | cut -d= -f2")"
+
+echo "==> Generating pi realm import (redirect URIs + LAN URLs + backend secret)"
+KC_BACKEND_SECRET="$KC_BACKEND_SECRET" \
+python3 - "$SCRIPT_DIR/../src/main/resources/keycloak-realm.json" \
+          "$SCRIPT_DIR/keycloak-realm-pi.json" "$PI_HOST" <<'PYEOF'
+import json, os, sys
+src, dst, host = sys.argv[1], sys.argv[2], sys.argv[3]
+realm = json.load(open(src))
+# LAN deployment is plain http — require no TLS inside Keycloak
+realm["sslRequired"] = "none"
+for client in realm.get("clients", []):
+    if client.get("clientId") == "sudothis-app":
+        uris = set(client.get("redirectUris", []))
+        uris.add(f"http://{host}:8081/*")
+        client["redirectUris"] = sorted(uris)
+        client["webOrigins"] = [f"http://{host}:8081"]
+    if client.get("clientId") == "sudothis-backend" and os.environ.get("KC_BACKEND_SECRET"):
+        client["secret"] = os.environ["KC_BACKEND_SECRET"]
+json.dump(realm, open(dst, "w"), indent=2)
+print(f"    wrote {dst}")
+PYEOF
 
 echo "==> Copying compose + realm"
 scp -q "$SCRIPT_DIR/docker-compose.pi.yml" "$PI_SSH:$REMOTE_DIR/docker-compose.yml"

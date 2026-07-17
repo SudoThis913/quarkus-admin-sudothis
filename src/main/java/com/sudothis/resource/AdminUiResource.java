@@ -50,10 +50,20 @@ public class AdminUiResource {
     // Page routes
     // -------------------------------------------------------------------------
 
+    @Inject
+    io.quarkus.security.identity.SecurityIdentity identity;
+
     @GET
     @Produces(MediaType.TEXT_HTML)
     public TemplateInstance getAdminPanel() {
-        return admin.data("entityDefinitions", registry.getDefinitions());
+        // "name" claim (First Last) when the token carries it, else the login name
+        String displayName = identity.getAttribute("name");
+        if (displayName == null || displayName.isBlank()) {
+            displayName = identity.getPrincipal().getName();
+        }
+        return admin
+            .data("entityDefinitions", registry.getDefinitions())
+            .data("currentUser", displayName);
     }
 
     @GET

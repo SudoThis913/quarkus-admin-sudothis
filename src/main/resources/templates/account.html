@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Settings — SudoThis Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f0f2f5; }
+        #topbar { background: #1a1f36; color: #fff; padding: 0 1.25rem; height: 52px;
+                  display: flex; align-items: center; gap: 1rem; }
+        #topbar h5 { margin: 0; font-weight: 600; }
+        #topbar a { color: #cfd4e0; text-decoration: none; font-size: .88rem; }
+        #topbar a:hover { color: #fff; }
+        .settings-wrap { max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+        .card { border: 1px solid #dee2e6; }
+    </style>
+</head>
+<body>
+    <div id="topbar">
+        <h5>SudoThis Admin</h5>
+        <div class="ms-auto d-flex gap-3">
+            <a href="/admin">Admin Panel</a>
+            <a href="/logout">Sign out</a>
+        </div>
+    </div>
+
+    <div class="settings-wrap">
+        <h4 class="mb-1">Account settings</h4>
+        <p class="text-muted mb-4">Signed in as <strong>{username}</strong></p>
+
+        {#if msg}
+        <div class="alert alert-success">{msg}</div>
+        {/if}
+        {#if err}
+        <div class="alert alert-danger">{err}</div>
+        {/if}
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h6 class="card-title fw-bold mb-3">Profile</h6>
+                <form method="post" action="/account/profile">
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label">First name</label>
+                            <input type="text" name="firstName" class="form-control" value="{firstName}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Last name</label>
+                            <input type="text" name="lastName" class="form-control" value="{lastName}" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" value="{email}" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Save profile</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h6 class="card-title fw-bold mb-3">Change password</h6>
+                {#if passwordAvailable}
+                <form method="post" action="/account/password">
+                    <div class="mb-3">
+                        <label class="form-label">Current password</label>
+                        <input type="password" name="currentPassword" class="form-control"
+                               autocomplete="current-password" required>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label">New password</label>
+                            <input type="password" name="newPassword" class="form-control"
+                                   autocomplete="new-password" minlength="12" required>
+                            <div class="form-text">At least 12 characters.</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Confirm new password</label>
+                            <input type="password" name="confirmPassword" class="form-control"
+                                   autocomplete="new-password" minlength="12" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Change password</button>
+                </form>
+                {#else}
+                <p class="text-muted mb-0">Password management is not available in this environment.</p>
+                {/if}
+            </div>
+        </div>
+
+        <div class="card border-danger">
+            <div class="card-body">
+                <h6 class="card-title fw-bold text-danger mb-3">Delete account</h6>
+                {#if isEmployee}
+                <p class="text-muted mb-0">
+                    This is a company-managed account. It can only be deleted by your
+                    organization's administrator.
+                </p>
+                {#else}
+                <p class="text-muted">
+                    This permanently removes your sign-in. Records required for audit
+                    compliance are retained in anonymized form. This cannot be undone.
+                </p>
+                <form method="post" action="/account/delete"
+                      onsubmit="return confirm('Really delete your account? This cannot be undone.');">
+                    <div class="mb-3">
+                        <label class="form-label">Type <code>DELETE</code> to confirm</label>
+                        <input type="text" name="confirm" class="form-control" style="max-width:200px"
+                               pattern="DELETE" required>
+                    </div>
+                    <button type="submit" class="btn btn-outline-danger btn-sm">Delete my account</button>
+                </form>
+                {/if}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

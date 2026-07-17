@@ -1,12 +1,13 @@
 {
   "realm": "sudothis",
   "enabled": true,
-
   "clients": [
     {
       "clientId": "sudothis-app",
       "publicClient": true,
-      "redirectUris": ["http://localhost:8081/*"],
+      "redirectUris": [
+        "http://localhost:8081/*"
+      ],
       "protocolMappers": [
         {
           "name": "groups",
@@ -34,10 +35,19 @@
             "userinfo.token.claim": "true"
           }
         }
-      ]
+      ],
+      "directAccessGrantsEnabled": true
+    },
+    {
+      "clientId": "sudothis-backend",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "secret": "CHANGE_ME_AT_DEPLOY",
+      "description": "Backend service account for self-service account management (deploy script injects the real secret)"
     }
   ],
-
   "users": [
     {
       "username": "admin@example.com",
@@ -47,19 +57,40 @@
       "firstName": "Site",
       "lastName": "Admin",
       "credentials": [
-        { "type": "password", "value": "admin123", "temporary": false }
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
       ],
-      "realmRoles": ["admin"]
+      "realmRoles": [
+        "admin"
+      ]
+    },
+    {
+      "username": "service-account-sudothis-backend",
+      "enabled": true,
+      "serviceAccountClientId": "sudothis-backend",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users"
+        ]
+      }
     }
   ],
-
   "roles": {
     "realm": [
-      { "name": "admin", "description": "Full administrative access" },
-      { "name": "user",  "description": "Standard user access" }
+      {
+        "name": "admin",
+        "description": "Full administrative access"
+      },
+      {
+        "name": "user",
+        "description": "Standard user access"
+      }
     ]
   },
-
   "identityProviders": [
     {
       "alias": "microsoft-entra",
@@ -93,7 +124,6 @@
       }
     }
   ],
-
   "identityProviderMappers": [
     {
       "name": "entra-groups-to-attribute",

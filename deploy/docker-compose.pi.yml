@@ -99,6 +99,9 @@ services:
       # Internal URL — Keycloak's KC_HOSTNAME/backchannel-dynamic config keeps
       # the advertised issuer and authorization endpoint browser-reachable
       OIDC_AUTH_SERVER_URL: http://keycloak:8080/realms/sudothis
+      # Self-service account management (Keycloak admin API via service account)
+      KC_ADMIN_URL: http://keycloak:8080
+      KC_BACKEND_CLIENT_SECRET: ${KC_BACKEND_CLIENT_SECRET}
       # This env override replaces the one baked into the image — keep its flags
       JAVA_OPTS_APPEND: "-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager -Xms48m -Xmx192m -XX:MaxMetaspaceSize=128m"
     ports:
