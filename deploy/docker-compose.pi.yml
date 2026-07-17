@@ -51,11 +51,16 @@ services:
       - start
       - --import-realm
       - --http-enabled=true
-      - --hostname-strict=false
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_ADMIN_USER}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
       KC_HEALTH_ENABLED: "true"
+      # Frontend URLs (issuer, authorization endpoint) are pinned to the
+      # browser-reachable address; backchannel-dynamic lets the app use
+      # http://keycloak:8080 internally — same-bridge NAT hairpin to the
+      # published port does not work, so the split is required.
+      KC_HOSTNAME: http://${PI_HOST}:8180
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       # Explicit heap — without cgroup limits, percentage-based sizing would
       # see the whole 2GB host and starve everything else.
       JAVA_OPTS_APPEND: "-Xms64m -Xmx256m -XX:MaxMetaspaceSize=160m"
@@ -91,8 +96,9 @@ services:
       JDBC_URL: jdbc:mysql://mysql:3306/quarkusdb
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
-      # Must be the browser-reachable URL; the container reaches it via NAT hairpin
-      OIDC_AUTH_SERVER_URL: http://${PI_HOST}:8180/realms/sudothis
+      # Internal URL — Keycloak's KC_HOSTNAME/backchannel-dynamic config keeps
+      # the advertised issuer and authorization endpoint browser-reachable
+      OIDC_AUTH_SERVER_URL: http://keycloak:8080/realms/sudothis
       # This env override replaces the one baked into the image — keep its flags
       JAVA_OPTS_APPEND: "-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager -Xms48m -Xmx192m -XX:MaxMetaspaceSize=128m"
     ports:
